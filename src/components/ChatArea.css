@@ -71,6 +71,7 @@
 
 /* 4. A wrapper to anchor the input section to the bottom */
 .input-wrapper {
+    /* width: 100%; */
     padding: 1rem 2rem;
     background-color: #16171a;
     /* border-top: 1px solid #232324; */

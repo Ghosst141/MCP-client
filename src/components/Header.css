@@ -8,11 +8,15 @@
   background-color: #1e1e1e;
   border-bottom: 1px solid #2c2c2c;
   width: 100%;
+  align-items: center;
+  height: 2.5rem;
+  display: flex;
 }
 
 .header-dropdown{
     display: flex;
     width: fit-content;
+    height: 100%;
 }
 
 .header-label {
@@ -28,6 +32,8 @@
   border: none;
   margin-inline: 0.5rem;
   font-size: 1.1rem;
+  border: 1px solid #2f2f2f;
+
 }
 
 .header-label:hover{
@@ -106,4 +112,23 @@
 .checkmark {
   font-size: 16px;
   margin-left: 8px;
+}
+
+
+.sidebar-btns {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sidebar-header-btn{
+  display: flex;
+  border: 1px solid #2f2f2f;
+  background-color: transparent;
+  color: white;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+}
+.sidebar-header-btn:hover {
+  background-color: #3c3c3c;
 }

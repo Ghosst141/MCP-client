@@ -13,4 +13,12 @@ interface Message {
   timestamp?: number;
 }
 
-export type { Message, FileAttachment };
+interface ChatlinksProps {
+  id: number
+  title: string;
+  selected: boolean;
+  onSelect: () => void;
+}
+
+
+export type { Message, FileAttachment, ChatlinksProps };
