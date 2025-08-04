@@ -32,7 +32,7 @@ export default function ChatArea() {
 
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>): void => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (!loading && e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend(textareaRef);
     }
