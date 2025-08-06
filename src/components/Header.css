@@ -5,8 +5,8 @@
 .header {
   position: relative;
   padding: 0.45rem 0.5rem;
-  background-color: #1e1e1e;
-  border-bottom: 1px solid #2c2c2c;
+  background-color: var(--bg-primary);
+  border-bottom: 1px solid var(--border-primary);
   width: 100%;
   align-items: center;
   height: 2.5rem;
@@ -21,7 +21,7 @@
 
 .header-label {
   background-color: transparent;
-  color: white;
+  color: var(--text-primary);
   font-weight: 500;
   padding: 0.5rem 0.5rem;
   border-radius: 8px;
@@ -32,12 +32,12 @@
   border: none;
   margin-inline: 0.5rem;
   font-size: 1.1rem;
-  border: 1px solid #2f2f2f;
+  border: 1px solid var(--border-primary);
 
 }
 
 .header-label:hover{
-    background-color: #3a3a3a;
+    background-color: var(--bg-tertiary);
 }
 
 .label-arrow {
@@ -49,11 +49,12 @@
 .dropdown {
   position: absolute;
   top: 60px;
-  background-color: #2e2e2e;
+  background-color: var(--dropdown-bg);
+  border: 1px solid var(--dropdown-border);
   border-radius: 10px;
   padding: 8px;
   width: 280px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 20px var(--dropdown-shadow);
   z-index: 999;
 }
 
@@ -62,18 +63,18 @@
   align-items: center;
   padding: 10px;
   border-radius: 8px;
-  color: #fff;
+  color: var(--text-primary);
   cursor: pointer;
   transition: background 0.2s ease;
   position: relative;
 }
 
 .dropdown-item:hover {
-  background-color: #3c3c3c;
+  background-color: var(--bg-tertiary);
 }
 
 .dropdown-item.selected {
-  background-color: #3c3c3c;
+  background-color: var(--bg-tertiary);
 }
 
 .icon {
@@ -92,7 +93,7 @@
 
 .subtitle {
   font-size: 12px;
-  color: #aaa;
+  color: var(--text-secondary);
 }
 
 .upgrade-btn {
@@ -114,6 +115,12 @@
   margin-left: 8px;
 }
 
+.dropdown-separator {
+  height: 1px;
+  background-color: var(--border-primary);
+  margin: 8px 4px;
+}
+
 
 .sidebar-btns {
   display: flex;
@@ -123,12 +130,128 @@
 
 .sidebar-header-btn{
   display: flex;
-  border: 1px solid #2f2f2f;
+  border: 1px solid var(--border-primary);
   background-color: transparent;
-  color: white;
+  color: var(--text-primary);
   padding: 0.5rem;
   border-radius: 0.5rem;
 }
 .sidebar-header-btn:hover {
-  background-color: #3c3c3c;
+  background-color: var(--bg-tertiary);
+}
+
+.theme-toggle {
+  position: relative;
+}
+
+.theme-toggle svg {
+  transition: transform 0.3s ease;
+}
+
+.theme-toggle:hover svg {
+  transform: scale(1.1);
+}
+
+/* API Key Modal Styles */
+.api-key-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--modal-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.api-key-modal {
+  background-color: var(--modal-bg);
+  border-radius: 12px;
+  padding: 24px;
+  width: 400px;
+  max-width: 90vw;
+  box-shadow: 0 8px 32px var(--shadow);
+  border: 1px solid var(--border-primary);
+}
+
+.api-key-modal h3 {
+  color: var(--text-primary);
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.api-key-modal p {
+  color: var(--text-secondary);
+  margin: 0 0 16px 0;
+  font-size: 14px;
+}
+
+.error-key {
+  color: var(--error) !important;
+  font-size: 12px !important;
+  margin: 0 0 12px 0 !important;
+}
+
+.api-key-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  background-color: var(--input-bg);
+  color: var(--text-primary);
+  font-size: 14px;
+  margin-bottom: 20px;
+  box-sizing: border-box;
+}
+
+.api-key-input:focus {
+  outline: none;
+  border-color: var(--input-border-focus);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+}
+
+.api-key-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.api-key-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.cancel-btn, .save-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+}
+
+.cancel-btn {
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-primary);
+}
+
+.cancel-btn:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.save-btn {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.save-btn:hover {
+  background-color: #2563eb;
+}
+
+.api-key-modal .error-key{
+  color: red;
 }

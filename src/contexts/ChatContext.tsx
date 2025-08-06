@@ -11,6 +11,7 @@ type ChatContextType = {
     deleteChat: (chatId: string) => Promise<void>;
     firstchat: string;
     setFirstChat: React.Dispatch<React.SetStateAction<string>>;
+    updateChatTimestamp: (chatId: string) => void;
 }
 
 const chatContext = createContext<ChatContextType | undefined>(undefined)
@@ -30,9 +31,15 @@ function ChatContext({ children }: { children: React.ReactNode }) {
                 credentials: "include",
             });
             const data = await res.json();
-            
-            // Reverse the array to show newest chats first
-            setChats(data.reverse());
+
+            // Sort chats by createdAt timestamp in descending order (newest first)
+            const sortedChats = data.sort((a: any, b: any) => {
+                const dateA = new Date(a.createdAt).getTime();
+                const dateB = new Date(b.createdAt).getTime();
+                return dateB - dateA; // Most recent first
+            });
+
+            setChats(sortedChats);
             setLoading(false);
         } catch (err) {
             console.error("Failed to fetch chats:", err);
@@ -44,12 +51,12 @@ function ChatContext({ children }: { children: React.ReactNode }) {
     const deleteChat = async (chatId: string) => {
         try {
             const url = `http://localhost:3000/api/chats/${chatId}?userId=user123`;
-            
+
             const res = await fetch(url, {
                 method: 'DELETE',
                 credentials: "include",
             });
-            
+
             if (!res.ok) {
                 // Check if it's a 404 error (route not found) vs other errors
                 if (res.status === 404) {
@@ -64,7 +71,7 @@ function ChatContext({ children }: { children: React.ReactNode }) {
                     throw new Error(`Failed to delete chat: ${res.status} - ${errorText}`);
                 }
             }
-            
+
             await refreshChats();
         } catch (err) {
             console.error("Failed to delete chat:", err);
@@ -75,14 +82,33 @@ function ChatContext({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const updateChatTimestamp = (chatId: string) => {
+        // Update the local chat list to move the updated chat to the top
+        setChats(prevChats => {
+            const updatedChats = prevChats.map(chat => {
+                if (chat._id === chatId) {
+                    return { ...chat, createdAt: new Date().toISOString() };
+                }
+                return chat;
+            });
+
+            // Sort again to ensure the updated chat is at the top
+            return updatedChats.sort((a, b) => {
+                const dateA = new Date(a.createdAt).getTime();
+                const dateB = new Date(b.createdAt).getTime();
+                return dateB - dateA; // Most recent first
+            });
+        });
+    };
+
     useEffect(() => {
         refreshChats();
     }, []);
 
-    
+
 
     return (
-        <chatContext.Provider value={{ chats, loading, error, setChats, setLoading, setError, refreshChats, deleteChat, firstchat, setFirstChat }}>
+        <chatContext.Provider value={{ chats, loading, error, setChats, setLoading, setError, refreshChats, deleteChat, firstchat, setFirstChat, updateChatTimestamp }}>
             {children}
         </chatContext.Provider>
     )

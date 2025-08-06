@@ -73,7 +73,7 @@
     margin-bottom: 4px;
 }
 
-.dropdown-item {
+.dropdown-item-btn {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -86,12 +86,12 @@
     transition: background-color 0.2s;
 }
 
-.dropdown-item:hover {
+.dropdown-item-btn:hover {
     background-color: #dc2626;
     color: #fff;
 }
 
-.dropdown-item svg {
+.dropdown-item-btn svg {
     width: 16px;
     height: 16px;
     flex-shrink: 0;

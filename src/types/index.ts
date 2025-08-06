@@ -21,5 +21,14 @@ interface ChatlinksProps {
   onDelete: (chatId: string) => void;
 }
 
+interface AIModel {
+  name: string;
+  displayName: string;
+  icon: string;
+  description: string;
+  apiKeyPrefix: string;
+}
 
-export type { Message, FileAttachment, ChatlinksProps };
+type ModelName = 'ChatGPT' | 'Gemini' | 'Claude' | 'GPT-4';
+
+export type { Message, FileAttachment, ChatlinksProps, AIModel, ModelName };

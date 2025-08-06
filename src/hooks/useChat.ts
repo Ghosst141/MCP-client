@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import axios from "axios";
 import type { Message, FileAttachment } from "../types/index";
+import { chatContext } from "../contexts/ChatContext";
 
 export function useChat(chatId?: string) {
     const [messages, setMessages] = useState<Message[]>([]);
@@ -8,6 +9,9 @@ export function useChat(chatId?: string) {
     const [loading, setLoading] = useState(false);
     const [mcpOption, setMcpOption] = useState('select');
     const [attachedFiles, setAttachedFiles] = useState<FileAttachment[]>([]);
+
+    const context = useContext(chatContext);
+    const updateChatTimestamp = context?.updateChatTimestamp;
 
     const handleSend = async (textareaRef: React.RefObject<HTMLDivElement | null>): Promise<void> => {
         if (!input.trim() && attachedFiles.length === 0) return;
@@ -80,6 +84,10 @@ export function useChat(chatId?: string) {
                             img: currentFiles?.[0]?.content || undefined,
                         }),
                     });
+                    // Update chat timestamp to move it to top of sidebar
+                    if (updateChatTimestamp) {
+                        updateChatTimestamp(chatId);
+                    }
                 } catch (dbError) {
                     console.error('Error saving conversation to database:', dbError);
                 }
@@ -109,6 +117,9 @@ export function useChat(chatId?: string) {
                             img: currentFiles?.[0]?.content || undefined,
                         }),
                     });
+                    if (updateChatTimestamp) {
+                        updateChatTimestamp(chatId);
+                    }
                 } catch (dbError) {
                     console.error('Error saving error response to database:', dbError);
                 }
@@ -132,16 +143,16 @@ export function useChat(chatId?: string) {
             'application/msword',
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
         ];
-        
+
         // Check if adding these files would exceed the limit
         const currentFileCount = attachedFiles.length;
         const newFileCount = files.length;
-        
+
         if (currentFileCount + newFileCount > maxFiles) {
             alert(`Cannot upload more than ${maxFiles} files. You currently have ${currentFileCount} files and are trying to add ${newFileCount} more.`);
             return;
         }
-        
+
         console.log(Array.from(files));
 
 
@@ -191,8 +202,8 @@ export function useChat(chatId?: string) {
         const validFiles = processedFiles.filter((file): file is FileAttachment => file !== null);
 
         setAttachedFiles(prev => [...prev, ...validFiles]);
-        console.log("attached files",attachedFiles);
-        
+        console.log("attached files", attachedFiles);
+
     };
 
     const readFileAsText = (file: File): Promise<string> => {
@@ -217,7 +228,7 @@ export function useChat(chatId?: string) {
         setAttachedFiles(prev => prev.filter((_, i) => i !== index));
     };
 
-    const handlePaste =async (
+    const handlePaste = async (
         e: React.ClipboardEvent<HTMLDivElement>,
         textareaRef: React.RefObject<HTMLDivElement | null>
     ) => {

@@ -36,7 +36,7 @@ export default function Dashboard() {
 
     const chats = useContext(chatContext);
     if (!chats) throw new Error("chatContext is undefined");
-    const { refreshChats,setFirstChat } = chats;
+    const { setFirstChat } = chats;
 
 
     const handleSend = async () => {
@@ -62,7 +62,7 @@ export default function Dashboard() {
             
             const chatId = await res.json();
             
-            refreshChats(); // Refresh the chat list after creating a new chat
+            // Don't refresh chats immediately - let it refresh when the message is processed
             setFirstChat(input.trim());
             Navigate(`/chat/${chatId}`);
             setInput("")

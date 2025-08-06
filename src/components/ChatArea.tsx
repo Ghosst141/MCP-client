@@ -46,7 +46,7 @@ export default function ChatArea() {
 
   const contextChat = useContext(chatContext);
   if (!contextChat) throw new Error("chatContext is undefined");
-  const { firstchat, setFirstChat} = contextChat;
+  const { firstchat, setFirstChat, updateChatTimestamp, refreshChats} = contextChat;
 
   const text = firstchat;
   setFirstChat("");
@@ -125,7 +125,6 @@ export default function ChatArea() {
 
             setMessages(prev => [...prev, aiResponse]);
 
-            // Save BOTH user question and AI response to database
             if (chatId) {
               try {
                 await fetch(`http://localhost:3000/api/chats/${chatId}`, {
@@ -138,6 +137,8 @@ export default function ChatArea() {
                     answer: points.join('\n'),
                   }),
                 });
+                updateChatTimestamp(chatId);
+                refreshChats(); // Refresh to show the new chat in sidebar
               } catch (error) {
                 console.error('Error saving AI response to database:', error);
               }
@@ -166,6 +167,8 @@ export default function ChatArea() {
                     answer:errorResponse.text,
                   }),
                 });
+                updateChatTimestamp(chatId);
+                refreshChats(); // Refresh to show the new chat in sidebar even for errors
               } catch (error) {
                 console.error('Error saving error response to database:', error);
               }
