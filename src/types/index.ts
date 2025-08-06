@@ -14,10 +14,11 @@ interface Message {
 }
 
 interface ChatlinksProps {
-  id: number
+  id: string;
   title: string;
   selected: boolean;
   onSelect: () => void;
+  onDelete: (chatId: string) => void;
 }
 
 

@@ -1,13 +1,17 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import axios from "axios";
 import type { Message, FileAttachment } from "../types/index";
+import { chatContext } from "../contexts/ChatContext";
 
-export function useChat() {
+export function useChat(chatId?: string) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [mcpOption, setMcpOption] = useState('select');
     const [attachedFiles, setAttachedFiles] = useState<FileAttachment[]>([]);
+    
+    const context = useContext(chatContext);
+    const updateChatTimestamp = context?.updateChatTimestamp;
 
     const handleSend = async (textareaRef: React.RefObject<HTMLDivElement | null>): Promise<void> => {
         if (!input.trim() && attachedFiles.length === 0) return;
@@ -64,6 +68,32 @@ export function useChat() {
                 timestamp: Date.now()
             };
             setMessages(prev => [...prev, aiResponse]);
+
+            // Save the conversation to database if chatId is provided
+            if (chatId) {
+                try {
+                    await fetch(`http://localhost:3000/api/chats/${chatId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            userId: "user123",
+                            question: currentInput,
+                            answer: points.join('\n'),
+                            img: currentFiles?.[0]?.content || undefined,
+                        }),
+                    });
+                    
+                    // Update chat timestamp to move it to top of sidebar
+                    if (updateChatTimestamp) {
+                        updateChatTimestamp(chatId);
+                    }
+                } catch (dbError) {
+                    console.error('Error saving conversation to database:', dbError);
+                }
+            }
+
         } catch (error) {
             console.error('Error contacting backend:', error);
             const errorResponse: Message = {
@@ -72,6 +102,31 @@ export function useChat() {
                 timestamp: Date.now()
             };
             setMessages(prev => [...prev, errorResponse]);
+
+            // Save error response to database if chatId is provided
+            if (chatId) {
+                try {
+                    await fetch(`http://localhost:3000/api/chats/${chatId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            userId: "user123",
+                            question: currentInput,
+                            answer: typeof errorResponse.text === 'string' ? errorResponse.text : errorResponse.text.join('\n'),
+                            img: currentFiles?.[0]?.content || undefined,
+                        }),
+                    });
+                    
+                    // Update chat timestamp to move it to top of sidebar even for errors
+                    if (updateChatTimestamp) {
+                        updateChatTimestamp(chatId);
+                    }
+                } catch (dbError) {
+                    console.error('Error saving error response to database:', dbError);
+                }
+            }
         } finally {
             setLoading(false);
         }
@@ -79,6 +134,7 @@ export function useChat() {
 
     const handleFileUpload = async (files: FileList): Promise<void> => {
         const maxFileSize = 10 * 1024 * 1024; // 10MB limit
+        const maxFiles = 10; // Maximum number of files allowed
         const allowedTypes = [
             'text/plain',
             'text/csv',
@@ -90,6 +146,16 @@ export function useChat() {
             'application/msword',
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
         ];
+        
+        // Check if adding these files would exceed the limit
+        const currentFileCount = attachedFiles.length;
+        const newFileCount = files.length;
+        
+        if (currentFileCount + newFileCount > maxFiles) {
+            alert(`Cannot upload more than ${maxFiles} files. You currently have ${currentFileCount} files and are trying to add ${newFileCount} more.`);
+            return;
+        }
+        
         console.log(Array.from(files));
 
 
@@ -139,6 +205,8 @@ export function useChat() {
         const validFiles = processedFiles.filter((file): file is FileAttachment => file !== null);
 
         setAttachedFiles(prev => [...prev, ...validFiles]);
+        console.log("attached files",attachedFiles);
+        
     };
 
     const readFileAsText = (file: File): Promise<string> => {
@@ -209,6 +277,8 @@ export function useChat() {
         handlePaste,
         attachedFiles,
         handleFileUpload,
-        removeAttachedFile
+        removeAttachedFile,
+        setMessages,
+        setLoading
     };
 }

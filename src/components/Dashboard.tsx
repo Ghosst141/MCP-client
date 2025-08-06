@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, type KeyboardEvent } from 'react';
+import { useState, useRef, useEffect, type KeyboardEvent, useContext } from 'react';
 import './ChatArea.css'
 import './Dashboard.css';
 import Header from './Header';
@@ -6,12 +6,13 @@ import { useClickOutside } from '../hooks/useClickOutside';
 import { useChat } from '../hooks/useChat';
 import InputArea from '../helpers/InputArea';
 import { useNavigate } from 'react-router-dom';
+import { chatContext } from '../contexts/ChatContext';
 
 
 export default function Dashboard() {
 
     const { input, setInput, messages, loading, mcpOption, setMcpOption, handlePaste,
-        attachedFiles, removeAttachedFile, handleFileUpload } = useChat();
+        attachedFiles, removeAttachedFile, handleFileUpload ,setLoading} = useChat();
     const [open, setOpen] = useState<boolean>(false);
     const textareaRef = useRef<HTMLDivElement | null>(null);
 
@@ -33,28 +34,58 @@ export default function Dashboard() {
         }
     }, [input]);
 
+    const chats = useContext(chatContext);
+    if (!chats) throw new Error("chatContext is undefined");
+    const { refreshChats,setFirstChat } = chats;
+
 
     const handleSend = async () => {
         if (input.trim() === '' && attachedFiles.length === 0) return;
-        Navigate("/chat/1");
+        const userId = "user123"; // Replace this with actual user ID logic
+        setLoading(true);
+        try {
+            const res = await fetch("http://localhost:3000/api/chats", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    userId,
+                    text: input.trim()
+                })
+            });
+            
+            if (!res.ok) {
+                const errorText = await res.text();
+                throw new Error(errorText || "Failed to create chat");
+            }
+            
+            const chatId = await res.json();
+            
+            refreshChats(); // Refresh the chat list after creating a new chat
+            setFirstChat(input.trim());
+            Navigate(`/chat/${chatId}`);
+            setInput("")
+            
+        } catch (error) {
+            console.error("Chat creation failed:", error);
+            setLoading(false);
+        }
     }
 
     const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>): void => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
-            // handleSend(textareaRef);
-            Navigate("/chat/1");
+            handleSend();
         }
     };
 
-    // Handle paste events to strip formatting
     const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files;
 
         if (files && files.length > 0) {
             await handleFileUpload(files);
         }
-        // Reset the input so the same file can be selected again
         event.target.value = '';
     };
 
