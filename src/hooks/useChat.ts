@@ -1,7 +1,6 @@
-import { useState, useContext } from "react";
+import { useState } from "react";
 import axios from "axios";
 import type { Message, FileAttachment } from "../types/index";
-import { chatContext } from "../contexts/ChatContext";
 
 export function useChat(chatId?: string) {
     const [messages, setMessages] = useState<Message[]>([]);
@@ -9,9 +8,6 @@ export function useChat(chatId?: string) {
     const [loading, setLoading] = useState(false);
     const [mcpOption, setMcpOption] = useState('select');
     const [attachedFiles, setAttachedFiles] = useState<FileAttachment[]>([]);
-    
-    const context = useContext(chatContext);
-    const updateChatTimestamp = context?.updateChatTimestamp;
 
     const handleSend = async (textareaRef: React.RefObject<HTMLDivElement | null>): Promise<void> => {
         if (!input.trim() && attachedFiles.length === 0) return;
@@ -84,11 +80,6 @@ export function useChat(chatId?: string) {
                             img: currentFiles?.[0]?.content || undefined,
                         }),
                     });
-                    
-                    // Update chat timestamp to move it to top of sidebar
-                    if (updateChatTimestamp) {
-                        updateChatTimestamp(chatId);
-                    }
                 } catch (dbError) {
                     console.error('Error saving conversation to database:', dbError);
                 }
@@ -118,11 +109,6 @@ export function useChat(chatId?: string) {
                             img: currentFiles?.[0]?.content || undefined,
                         }),
                     });
-                    
-                    // Update chat timestamp to move it to top of sidebar even for errors
-                    if (updateChatTimestamp) {
-                        updateChatTimestamp(chatId);
-                    }
                 } catch (dbError) {
                     console.error('Error saving error response to database:', dbError);
                 }

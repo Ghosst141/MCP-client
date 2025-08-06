@@ -46,7 +46,7 @@ export default function ChatArea() {
 
   const contextChat = useContext(chatContext);
   if (!contextChat) throw new Error("chatContext is undefined");
-  const { firstchat, setFirstChat, refreshChats, updateChatTimestamp } = contextChat;
+  const { firstchat, setFirstChat} = contextChat;
 
   const text = firstchat;
   setFirstChat("");
@@ -135,13 +135,9 @@ export default function ChatArea() {
                   },
                   body: JSON.stringify({
                     userId: "user123",
-                    question: text, // Include the user's question
                     answer: points.join('\n'),
                   }),
                 });
-                
-                // Update chat timestamp to move it to top of sidebar
-                updateChatTimestamp(chatId);
               } catch (error) {
                 console.error('Error saving AI response to database:', error);
               }

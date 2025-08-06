@@ -9,7 +9,6 @@ type ChatContextType = {
     setError: React.Dispatch<React.SetStateAction<boolean>>;
     refreshChats: () => Promise<void>;
     deleteChat: (chatId: string) => Promise<void>;
-    updateChatTimestamp: (chatId: string) => void;
     firstchat: string;
     setFirstChat: React.Dispatch<React.SetStateAction<string>>;
 }
@@ -32,14 +31,8 @@ function ChatContext({ children }: { children: React.ReactNode }) {
             });
             const data = await res.json();
             
-            // Sort chats by createdAt timestamp in descending order (newest first)
-            const sortedChats = data.sort((a: any, b: any) => {
-                const dateA = new Date(a.createdAt).getTime();
-                const dateB = new Date(b.createdAt).getTime();
-                return dateB - dateA; // Most recent first
-            });
-            
-            setChats(sortedChats);
+            // Reverse the array to show newest chats first
+            setChats(data.reverse());
             setLoading(false);
         } catch (err) {
             console.error("Failed to fetch chats:", err);
@@ -82,25 +75,6 @@ function ChatContext({ children }: { children: React.ReactNode }) {
         }
     };
 
-    const updateChatTimestamp = (chatId: string) => {
-        // Update the local chat list to move the updated chat to the top
-        setChats(prevChats => {
-            const updatedChats = prevChats.map(chat => {
-                if (chat._id === chatId) {
-                    return { ...chat, createdAt: new Date().toISOString() };
-                }
-                return chat;
-            });
-            
-            // Sort again to ensure the updated chat is at the top
-            return updatedChats.sort((a, b) => {
-                const dateA = new Date(a.createdAt).getTime();
-                const dateB = new Date(b.createdAt).getTime();
-                return dateB - dateA; // Most recent first
-            });
-        });
-    };
-
     useEffect(() => {
         refreshChats();
     }, []);
@@ -108,7 +82,7 @@ function ChatContext({ children }: { children: React.ReactNode }) {
     
 
     return (
-        <chatContext.Provider value={{ chats, loading, error, setChats, setLoading, setError, refreshChats, deleteChat, updateChatTimestamp, firstchat, setFirstChat }}>
+        <chatContext.Provider value={{ chats, loading, error, setChats, setLoading, setError, refreshChats, deleteChat, firstchat, setFirstChat }}>
             {children}
         </chatContext.Provider>
     )
