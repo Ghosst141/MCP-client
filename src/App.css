@@ -306,3 +306,74 @@ body {
   padding: 0 0.75rem;
   color: var(--chatlinks-title);
 }
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  .app-container {
+    position: relative;
+  }
+  
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    width: 260px;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+    /* Override desktop transition properties for mobile */
+    padding: initial;
+    overflow-y: scroll;
+  }
+  
+  .sidebar:not(.closed) {
+    transform: translateX(0);
+  }
+  
+  .sidebar.closed {
+    transform: translateX(-100%);
+    width: 260px;
+    padding: initial;
+    overflow: initial;
+  }
+  
+  /* Disable transitions during resize to prevent flickering */
+  .sidebar.no-transition {
+    transition: none !important;
+  }
+  
+  /* Sidebar overlay backdrop */
+  .sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+  }
+  
+  .sidebar-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+/* Ensure smooth transition only on larger screens */
+@media (min-width: 769px) {
+  .sidebar {
+    position: static;
+    transform: none;
+    transition: width 0.1s ease-in-out, padding 0.1s ease-in-out;
+  }
+  
+  .sidebar.closed {
+    width: 0;
+    padding: 0;
+    overflow: hidden;
+    transform: none;
+  }
+}

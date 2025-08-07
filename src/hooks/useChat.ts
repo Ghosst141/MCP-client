@@ -1,7 +1,7 @@
 import { useContext, useState } from "react";
-import axios from "axios";
 import type { Message, FileAttachment } from "../types/index";
 import { chatContext } from "../contexts/ChatContext";
+import useChatModel from "./useChatModel";
 
 export function useChat(chatId?: string) {
     const [messages, setMessages] = useState<Message[]>([]);
@@ -12,6 +12,7 @@ export function useChat(chatId?: string) {
 
     const context = useContext(chatContext);
     const updateChatTimestamp = context?.updateChatTimestamp;
+    const geminiModel = useChatModel(); // Add Gemini model
 
     const handleSend = async (textareaRef: React.RefObject<HTMLDivElement | null>): Promise<void> => {
         if (!input.trim() && attachedFiles.length === 0) return;
@@ -34,37 +35,27 @@ export function useChat(chatId?: string) {
             textareaRef.current.innerText = '';
         }
 
-        const apiUrl = 'http://localhost:3001/query';
-
         try {
-            const formData = new FormData();
-            formData.append('query', currentInput);
-            formData.append('mode', mcpOption);
-
-            // Add files to form data
-            if (currentFiles.length > 0) {
-                formData.append('filesData', JSON.stringify(currentFiles.map(file => ({
-                    name: file.name,
-                    type: file.type,
-                    size: file.size,
-                    content: file.content
-                }))));
+            // Check if Gemini model is loaded
+            if (!geminiModel) {
+                throw new Error('Gemini model not loaded yet');
             }
 
-            const response = await axios.post(apiUrl, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            });
+            // Prepare the prompt
+            let prompt = currentInput;
+            if (currentFiles.length > 0) {
+                const fileInfo = currentFiles.map(file => `File: ${file.name} (${file.type})`).join(', ');
+                prompt = prompt ? `${prompt}\n\nAttached files: ${fileInfo}` : `Analyze these files: ${fileInfo}`;
+            }
 
-            const responseText: string = (response.data as { content: string }).content;
-            const points: string[] = responseText
-                .split('\n')
-                .filter(point => point.trim() !== '');
+            // Call Gemini API
+            const result = await geminiModel.generateContent(prompt);
+            const responseText = result.response.text();
 
+            // Store raw response
             const aiResponse: Message = {
                 sender: 'ai',
-                text: points,
+                text: responseText,
                 timestamp: Date.now()
             };
             setMessages(prev => [...prev, aiResponse]);
@@ -80,7 +71,7 @@ export function useChat(chatId?: string) {
                         body: JSON.stringify({
                             userId: "user123",
                             question: currentInput,
-                            answer: points.join('\n'),
+                            answer: responseText,
                             files: currentFiles.length > 0 ? currentFiles : undefined,
                         }),
                     });
@@ -97,7 +88,7 @@ export function useChat(chatId?: string) {
             console.error('Error contacting backend:', error);
             const errorResponse: Message = {
                 sender: 'ai',
-                text: `Error: Failed to get response for ${mcpOption} mode. Please check the console and try again.`,
+                text: `Error: Failed to get response from Gemini. ${error instanceof Error ? error.message : 'Please try again.'}`,
                 timestamp: Date.now()
             };
             setMessages(prev => [...prev, errorResponse]);
@@ -113,7 +104,7 @@ export function useChat(chatId?: string) {
                         body: JSON.stringify({
                             userId: "user123",
                             question: currentInput,
-                            answer: typeof errorResponse.text === 'string' ? errorResponse.text : errorResponse.text.join('\n'),
+                            answer: errorResponse.text,
                             files: currentFiles.length > 0 ? currentFiles : undefined,
                         }),
                     });

@@ -104,7 +104,7 @@
     border-bottom-right-radius: 5px;
 }
 
-.ai {
+.message.ai {
     background-color: var(--ai-chat);
     color: var(--ai-text);
     /* color: var(--chatlink-btn); */
@@ -112,6 +112,7 @@
     align-self: flex-start;
     /* Aligns AI messages to the left */
     border-bottom-left-radius: 5px;
+    max-width: 85%;
 }
 
 
@@ -595,3 +596,283 @@
     border-radius: 8px;
     border: 1px solid #444;
 }
+
+@media (max-width: 768px) {
+  .messages-container {
+    padding-inline: 2rem;
+  }
+  
+}
+
+/* Professional Markdown Styling - AI messages only */
+.message.ai .markdown-content {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  line-height: 1.6;
+  color: inherit;
+}
+
+/* Headers - AI messages only */
+.message.ai h1, .message.ai h2, .message.ai h3, .message.ai h4, .message.ai h5, .message.ai h6 {
+  margin: 1em 0 0.5em 0;
+  font-weight: 600;
+  line-height: 1.3;
+  color: inherit;
+}
+
+.message.ai h1 { font-size: 1.5em; }
+.message.ai h2 { font-size: 1.3em; }
+.message.ai h3 { font-size: 1.15em; }
+.message.ai h4 { font-size: 1.05em; }
+.message.ai h5 { font-size: 1em; }
+.message.ai h6 { font-size: 0.95em; }
+
+/* First header has no top margin - AI messages only */
+.message.ai h1:first-child,
+.message.ai h2:first-child,
+.message.ai h3:first-child,
+.message.ai h4:first-child,
+.message.ai h5:first-child,
+.message.ai h6:first-child {
+  margin-top: 0;
+}
+
+/* Paragraphs - AI messages only */
+.message.ai p {
+  margin: 0.75em 0;
+  line-height: 1.6;
+}
+
+.message.ai p:first-child {
+  margin-top: 0;
+}
+
+.message.ai p:last-child {
+  margin-bottom: 0;
+}
+
+/* Lists - AI messages only */
+.message.ai ul, .message.ai ol {
+  margin: 0.75em 0;
+  padding-left: 1.5em;
+}
+
+.message.ai li {
+  margin: 0.25em 0;
+  line-height: 1.5;
+}
+
+.message.ai ul ul, .message.ai ol ol, .message.ai ul ol, .message.ai ol ul {
+  margin: 0.25em 0;
+}
+
+/* Compact list styling for better spacing - AI messages only */
+.message.ai li > p {
+  margin: 0.25em 0;
+}
+
+/* Code blocks - AI messages only */
+.message.ai pre {
+  background: #0d1117 !important;
+  border: 1px solid #21262d;
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+  overflow-x: auto;
+  font-family: 'Fira Code', 'Monaco', 'Consolas', 'Ubuntu Mono', 'SFMono-Regular', monospace;
+  font-size: 0.9em;
+  line-height: 1.4;
+  position: relative;
+}
+
+/* Light theme code blocks - AI messages only */
+[data-theme="light"] .message.ai pre {
+  background: #7e7777!important;
+  border-color: #d0d7de;
+}
+
+.message.ai code {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 4px;
+  padding: 0.2em 0.4em;
+  font-family: 'Fira Code', 'Monaco', 'Consolas', 'Ubuntu Mono', 'SFMono-Regular', monospace;
+  font-size: 0.9em;
+  color: #58a6ff;
+}
+
+/* Light theme inline code - AI messages only */
+[data-theme="light"] .message.ai code {
+  background: #e6edf3;
+  border-color: #d0d7de;
+  color: #d73a49;
+}
+
+.message.ai pre code {
+  background: transparent !important;
+  border: none !important;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+}
+
+/* Language label for code blocks - AI messages only */
+.message.ai pre::before {
+  content: attr(data-language);
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: #8b949e;
+  text-transform: uppercase;
+  font-weight: 500;
+  z-index: 1;
+}
+
+[data-theme="light"] .message.ai pre::before {
+  background: rgba(0, 0, 0, 0.1);
+  color: #6e7781;
+}
+
+/* Override highlight.js styles for better integration */
+.message.ai pre code.hljs {
+  background: transparent !important;
+  padding: 0 !important;
+  display: block;
+  overflow-x: auto;
+}
+
+/* Ensure proper text color inheritance */
+.message.ai pre {
+  color: inherit;
+}
+
+/* Light theme adjustments for highlight.js */
+[data-theme="light"] .message.ai pre code.hljs {
+  color: #e2e4e5;
+}
+
+/* Light theme comment colors for code blocks */
+[data-theme="light"] .message.ai pre .hljs-comment,
+[data-theme="light"] .message.ai pre .hljs-quote {
+  color: #32e600;
+}
+
+/* Light theme docstring/documentation comments */
+[data-theme="light"] .message.ai pre .hljs-doctag,
+[data-theme="light"] .message.ai pre .hljs-meta {
+  color: #32e600;
+}
+
+/* Blockquotes - AI messages only */
+.message.ai blockquote {
+  border-left: 4px solid rgba(255, 255, 255, 0.3);
+  margin: 1em 0;
+  padding: 0.5em 0 0.5em 1em;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 0 4px 4px 0;
+  font-style: italic;
+}
+
+.message.ai blockquote p {
+  margin: 0.5em 0;
+}
+
+/* Tables - AI messages only */
+.message.ai table {
+  border-collapse: collapse;
+  margin: 1em 0;
+  width: 100%;
+  font-size: 0.9em;
+}
+
+.message.ai th, .message.ai td {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 0.5em 0.75em;
+  text-align: left;
+}
+
+.message.ai th {
+  background: rgba(0, 0, 0, 0.1);
+  font-weight: 600;
+}
+
+.message.ai tr:nth-child(even) {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+/* Links - AI messages only */
+.message.ai a {
+  color: #4a9eff;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.message.ai a:hover {
+  border-bottom-color: #4a9eff;
+}
+
+/* Horizontal rules - AI messages only */
+.message.ai hr {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  margin: 1.5em 0;
+}
+
+/* Strong and emphasis - AI messages only */
+.message.ai strong {
+  font-weight: 600;
+}
+
+.message.ai em {
+  font-style: italic;
+}
+
+/* Remove excessive spacing from nested elements - AI messages only */
+.message.ai > *:first-child {
+  margin-top: 0 !important;
+}
+
+.message.ai > *:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* Compact spacing for consecutive elements - AI messages only */
+.message.ai p + ul,
+.message.ai p + ol,
+.message.ai ul + p,
+.message.ai ol + p {
+  margin-top: 0.5em;
+}
+
+.message.ai h1 + p,
+.message.ai h2 + p,
+.message.ai h3 + p,
+.message.ai h4 + p,
+.message.ai h5 + p,
+.message.ai h6 + p {
+  margin-top: 0.5em;
+}
+
+/* AI message specific styling - Enhanced for better visibility */
+.message.ai pre {
+  background: #0d1117;
+  border-color: #21262d;
+  color: #f0f6fc;
+}
+
+.message.ai code {
+  background: #161b22;
+  border-color: #30363d;
+  color: #58a6ff;
+}
+
+.message.ai blockquote {
+  border-left-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* User messages are plain text only, no markdown styling applied */

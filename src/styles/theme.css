@@ -51,7 +51,7 @@
     --ai-text: #212529;
     --msg-file-bg: #10b981;
     --attached-file-hover: #d1d5db;
-
+    --chatlink-selected: #c7c7c7;
 }
 
 /* Dark theme colors */
@@ -99,13 +99,14 @@
     --input-file-header:#ccc;
     --file-remove-hover:rgba(255, 68, 68, 0.1);
     --input-btns-bg: #444;
-    --send-btn-bg:none;
+    --send-btn-bg:white;
     --border-seperator: #7e7e7e;
     --user-chat: #007bff;
     --ai-chat: #2c2d30;
     --ai-text: #fafafa;
     --msg-file-bg:none;
     --attached-file-hover: #444;
+    --chatlink-selected:#2c2d30;
 }
 
 /* Apply theme to body */

@@ -1,5 +1,10 @@
 import React, { createContext, useEffect, useState } from 'react'
 
+type FirstChatData = {
+    text: string;
+    files?: any[];
+} | null;
+
 type ChatContextType = {
     chats: any[];
     loading: boolean;
@@ -9,8 +14,8 @@ type ChatContextType = {
     setError: React.Dispatch<React.SetStateAction<boolean>>;
     refreshChats: () => Promise<void>;
     deleteChat: (chatId: string) => Promise<void>;
-    firstchat: string;
-    setFirstChat: React.Dispatch<React.SetStateAction<string>>;
+    firstchat: FirstChatData;
+    setFirstChat: React.Dispatch<React.SetStateAction<FirstChatData>>;
     updateChatTimestamp: (chatId: string) => void;
 }
 
@@ -22,7 +27,7 @@ function ChatContext({ children }: { children: React.ReactNode }) {
     const [chats, setChats] = useState([] as any[]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<boolean>(false);
-    const [firstchat, setFirstChat] = useState<string>('');
+    const [firstchat, setFirstChat] = useState<FirstChatData>(null);
 
     const refreshChats = async () => {
         try {

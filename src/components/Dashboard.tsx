@@ -7,6 +7,7 @@ import { useChat } from '../hooks/useChat';
 import InputArea from '../helpers/InputArea';
 import { useNavigate } from 'react-router-dom';
 import { chatContext } from '../contexts/ChatContext';
+import { SideContext } from '../contexts/SidebarContext';
 
 
 export default function Dashboard() {
@@ -38,6 +39,10 @@ export default function Dashboard() {
     if (!chats) throw new Error("chatContext is undefined");
     const { setFirstChat } = chats;
 
+    const sidebarContext = useContext(SideContext);
+    if (!sidebarContext) throw new Error("SidebarContext is undefined");
+    const { setSelectedChatId } = sidebarContext;
+
 
     const handleSend = async () => {
         if (input.trim() === '' && attachedFiles.length === 0) return;
@@ -63,9 +68,15 @@ export default function Dashboard() {
             
             const chatId = await res.json();
             
+            // Set the newly created chat as selected
+            
             // Don't refresh chats immediately - let it refresh when the message is processed
-            setFirstChat(input.trim());
+            setFirstChat({
+                text: input.trim(),
+                files: attachedFiles.length > 0 ? attachedFiles : undefined
+            });
             Navigate(`/chat/${chatId}`);
+            setSelectedChatId(chatId);
             setInput("")
             
         } catch (error) {

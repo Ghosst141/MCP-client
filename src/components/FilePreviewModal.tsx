@@ -14,31 +14,59 @@ function FilePreviewModal({ file, isOpen, onClose, formatFileSize }: FilePreview
     const renderPreview = () => {
         if (file.type.startsWith('image/')) {
             return (
-                <img 
-                    src={file.content} 
+                <img
+                    src={file.content}
                     alt={file.name}
                     className="preview-image"
                 />
             );
         } else if (file.type.startsWith('text/') || file.type === 'application/json') {
-            // For text files, decode base64 content
-            const textContent = file.content ? atob(file.content.split(',')[1] || file.content) : 'No content available';
+            // For text files, the content is already plain text (not base64)
+            const textContent = file.content || 'No content available';
+
+            // Create a downloadable data URL for text content
+            const createTextDownloadUrl = () => {
+                const blob = new Blob([textContent], { type: file.type });
+                return URL.createObjectURL(blob);
+            };
+
             return (
-                <pre className="preview-text">
-                    {textContent}
-                </pre>
+                <div className="preview-text-container">
+                    <div className="preview-text-header">
+                        <span className="preview-label">File Preview</span>
+                        <a
+                            href={createTextDownloadUrl()}
+                            download={file.name}
+                            className="download-link"
+                        >
+                            Download {file.name}
+                        </a>
+                    </div>
+                    <pre className="preview-text">
+                        {textContent}
+                    </pre>
+                </div>
             );
         } else if (file.type === 'application/pdf') {
             return (
                 <div className="preview-pdf">
-                    <p>PDF Preview</p>
-                    <a 
-                        href={file.content} 
-                        download={file.name}
-                        className="download-link"
-                    >
-                        Download {file.name}
-                    </a>
+                    <div className="pdf-iframe-container">
+                        <iframe
+                            src={`${file.content}#toolbar=1&navpanes=1&scrollbar=1&page=1&view=FitH`}
+                            title="PDF Preview"
+                            className="pdf-iframe"
+                        />
+                    </div>
+                    <div className="pdf-download-section">
+                        <p>PDF Document</p>
+                        <a
+                            href={file.content}
+                            download={file.name}
+                            className="download-link"
+                        >
+                            Download {file.name}
+                        </a>
+                    </div>
                 </div>
             );
         } else {
@@ -50,8 +78,8 @@ function FilePreviewModal({ file, isOpen, onClose, formatFileSize }: FilePreview
                         File: {file.name} ({formatFileSize(file.size)})
                     </p>
                     {file.content && (
-                        <a 
-                            href={file.content} 
+                        <a
+                            href={file.content}
                             download={file.name}
                             className="download-link"
                         >

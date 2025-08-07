@@ -1,6 +1,9 @@
 // import React from 'react'
 import type { Message } from '../types/index'
 import FilesDisplayMessages from './FilesDisplayMessages';
+import Markdown from 'react-markdown';
+import rehypeHighlight from 'rehype-highlight';
+import 'highlight.js/styles/github-dark.css';
 
 // Utility function to format file size
 const formatFileSize = (bytes: number): string => {
@@ -33,6 +36,10 @@ function ChatMessage({ msg, index }: { msg: Message; index: number }) {
                                     <li key={i}>{point}</li>
                                 ))}
                             </ul>
+                        ) : msg.sender === 'ai' ? (
+                            <div className='markdown-content'>
+                                <Markdown rehypePlugins={[rehypeHighlight]}>{msg.text as any}</Markdown>
+                            </div>
                         ) : (
                             <span style={{ whiteSpace: "pre-wrap" }}>{msg.text}</span>
                         )}

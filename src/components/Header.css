@@ -257,3 +257,20 @@
 .api-key-modal .error-key{
   color: red;
 }
+
+
+@media (max-width: 768px) {
+  .sidebar-btns {
+     gap: 1rem;
+  }
+  .header-label{
+    margin-inline: 1rem;
+  }
+  .header{
+    padding-inline:2rem ;
+  }
+  .theme-toggle{
+    right: 2rem;
+    margin-right: 0;
+  }
+}

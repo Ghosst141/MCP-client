@@ -25,6 +25,16 @@ const sendInitialMessage = async (
     formData.append('query', text);
     formData.append('mode', mcpOption);
 
+    // Add files to form data if they exist
+    if (attachedFiles.length > 0) {
+      formData.append('filesData', JSON.stringify(attachedFiles.map(file => ({
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        content: file.content
+      }))));
+    }
+
     const response = await fetch(apiUrl, {
       method: 'POST',
       body: formData,
@@ -37,13 +47,10 @@ const sendInitialMessage = async (
     const data = await response.json();
     const responseText: string = data.content;
 
-    const points: string[] = responseText
-      .split('\n')
-      .filter(point => point.trim() !== '');
-
+    // Store raw response instead of splitting into points
     const aiResponse: Message = {
       sender: 'ai',
-      text: points,
+      text: responseText, // Keep raw response
       timestamp: Date.now()
     };
 

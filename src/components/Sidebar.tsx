@@ -1,4 +1,4 @@
-import { useContext } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { SideContext } from '../contexts/SidebarContext';
 import { useNavigate } from 'react-router-dom';
 import Chatlinks from '../helpers/Chatlinks';
@@ -11,9 +11,28 @@ const Sidebar = () => {
   if (!context) throw new Error("SidebarContext is undefined");
 
   const Navigate = useNavigate();
+  const [isResizing, setIsResizing] = useState(false);
 
   const { isSideopen, toggleSidebar, selectedChatId, setSelectedChatId } = context;
 
+  // Handle resize to prevent transition flickering
+  useEffect(() => {
+    let resizeTimer: number;
+    
+    const handleResize = () => {
+      setIsResizing(true);
+      clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(() => {
+        setIsResizing(false);
+      }, 100);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(resizeTimer);
+    };
+  }, []);
 
   // Dummy chat array (replace with your data)
 
@@ -23,7 +42,7 @@ const Sidebar = () => {
 
   return (
     // Conditionally apply the 'closed' class based on the isOpen prop
-    <div className={`sidebar ${!isSideopen ? 'closed' : ''}`}>
+    <div className={`sidebar ${!isSideopen ? 'closed' : ''} ${isResizing ? 'no-transition' : ''}`}>
       <div className="sidebar-header">
         {/* The onClick handler now calls the onToggle function from props */}
         <button className="sidebar-button" onClick={toggleSidebar}>

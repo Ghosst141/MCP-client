@@ -106,5 +106,5 @@
 }
 
 .selected{
-    background-color: var(--chatlink-dropdown);
+    background-color: var(--chatlink-selected);
 }

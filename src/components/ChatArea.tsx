@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, type KeyboardEvent, useContext } from 'react';
+import { useState, useRef, useEffect, type KeyboardEvent, useContext, useMemo } from 'react';
 import './ChatArea.css'
 import Header from './Header';
 import { useClickOutside } from '../hooks/useClickOutside';
@@ -9,6 +9,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 // import type { Message } from '../types';
 import type { FileAttachment, Message } from '../types';
 import { chatContext } from '../contexts/ChatContext';
+import useChatModel from '../hooks/useChatModel';
 
 
 export default function ChatArea() {
@@ -19,6 +20,8 @@ export default function ChatArea() {
     attachedFiles, removeAttachedFile, handleFileUpload, setMessages, setLoading } = useChat(chatId);
   const [open, setOpen] = useState<boolean>(false);
   const textareaRef = useRef<HTMLDivElement | null>(null);
+  const geminiModel = useChatModel(); // Add Gemini model
+  const [initialMessageProcessed, setInitialMessageProcessed] = useState<boolean>(false);
 
   const options: string[] = ['Job Portal', 'Normal'];
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -48,8 +51,9 @@ export default function ChatArea() {
   if (!contextChat) throw new Error("chatContext is undefined");
   const { firstchat, setFirstChat, updateChatTimestamp, refreshChats} = contextChat;
 
-  const text = firstchat;
-  setFirstChat("");
+  const firstChatData = firstchat;
+  const text = firstChatData?.text || '';
+  const firstChatFiles = useMemo(() => firstChatData?.files || [], [firstChatData?.files]);
 
   console.log(chatId);
 
@@ -64,8 +68,8 @@ export default function ChatArea() {
         if (!Array.isArray(data.history)) return;
 
         // Check if chat has no messages (empty history)
-        if (data.history.length === 0 && !text) {
-          console.log("Chat has no messages and no firstchat text, redirecting to home");
+        if (data.history.length === 0 && !text && (!firstChatFiles || firstChatFiles.length === 0)) {
+          console.log("Chat has no messages and no firstchat text/files, redirecting to home");
           Navigate('/');
           return;
         }
@@ -77,7 +81,7 @@ export default function ChatArea() {
 
           return {
             sender: item.role === 'user' ? 'user' : 'ai',
-            text: item.parts.map((p: any) => p.text),
+            text: item.parts.length > 1 ? item.parts.map((p: any) => p.text) : item.parts[0]?.text || '',
             files,
             timestamp: item.timestamp ? new Date(item.timestamp).getTime() : Date.now(),
           };
@@ -86,35 +90,37 @@ export default function ChatArea() {
         setMessages(mappedMessages);
         console.log("messages", messages);
 
-        // If this is a new chat from dashboard (has firstchat text), send initial message to get AI response
-        if (text) {
+        // If this is a new chat from dashboard (has firstchat text or files), send initial message to get AI response
+        if ((text || (firstChatFiles && firstChatFiles.length > 0)) && !initialMessageProcessed && geminiModel) {
+          setInitialMessageProcessed(true); // Mark as processing to prevent duplicate calls
+          
+          // Add user message first
+          const userMessage: Message = {
+            sender: 'user',
+            text: text,
+            files: firstChatFiles.length > 0 ? firstChatFiles : undefined,
+            timestamp: Date.now()
+          };
+          setMessages(prev => [...prev, userMessage]);
+          
           setLoading(true);
-          const apiUrl = 'http://localhost:3001/query';
 
           try {
-            const formData = new FormData();
-            formData.append('query', text);
-            formData.append('mode', mcpOption);
-
-            const response = await fetch(apiUrl, {
-              method: 'POST',
-              body: formData,
-            });
-
-            if (!response.ok) {
-              throw new Error(`Failed to fetch: ${response.statusText}`);
+            // Prepare the prompt
+            let prompt = text || '';
+            if (firstChatFiles && firstChatFiles.length > 0) {
+              const fileInfo = firstChatFiles.map(file => `File: ${file.name} (${file.type})`).join(', ');
+              prompt = prompt ? `${prompt}\n\nAttached files: ${fileInfo}` : `Analyze these files: ${fileInfo}`;
             }
 
-            const apiData = await response.json();
-            const responseText: string = apiData.content;
+            // Call Gemini API
+            const result = await geminiModel.generateContent(prompt);
+            const responseText = result.response.text();
 
-            const points: string[] = responseText
-              .split('\n')
-              .filter(point => point.trim() !== '');
-
+            // Store raw response
             const aiResponse: Message = {
               sender: 'ai',
-              text: points,
+              text: responseText,
               timestamp: Date.now()
             };
 
@@ -129,27 +135,30 @@ export default function ChatArea() {
                   },
                   body: JSON.stringify({
                     userId: "user123",
-                    answer: points.join('\n'),
+                    answer: responseText,
                   }),
                 });
                 updateChatTimestamp(chatId);
-                refreshChats(); // Refresh to show the new chat in sidebar
+                refreshChats();
               } catch (error) {
                 console.error('Error saving AI response to database:', error);
               }
             }
+
+            // Clear firstchat data after successful processing
+            setFirstChat(null);
 
           } catch (error) {
             console.error('Error contacting backend:', error);
             
             const errorResponse: Message = {
               sender: 'ai',
-              text: `Error: Failed to get response for ${mcpOption} mode. Please check the console and try again.`,
+              text: `Error: Failed to get response from Gemini. ${error instanceof Error ? error.message : 'Please try again.'}`,
               timestamp: Date.now()
             };
             setMessages(prev => [...prev, errorResponse]);
 
-            // Save error response to database with user question
+            // Save error response to database
             if (chatId) {
               try {
                 await fetch(`http://localhost:3000/api/chats/${chatId}`, {
@@ -159,18 +168,20 @@ export default function ChatArea() {
                   },
                   body: JSON.stringify({
                     userId: "user123",
-                    answer:errorResponse.text,
+                    answer: errorResponse.text,
                   }),
                 });
                 updateChatTimestamp(chatId);
-                refreshChats(); // Refresh to show the new chat in sidebar even for errors
+                refreshChats();
               } catch (error) {
                 console.error('Error saving error response to database:', error);
               }
             }
+
+            // Clear firstchat data even on error
+            setFirstChat(null);
           } finally {
             setLoading(false);
-            // refreshChats();
           }
         }
 
@@ -183,7 +194,8 @@ export default function ChatArea() {
     if (chatId) {
       fetchChat();
     }
-  }, [chatId, text]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatId, text, firstChatFiles, mcpOption, geminiModel, initialMessageProcessed]);
 
   // Handle paste events to strip formatting
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -196,13 +208,13 @@ export default function ChatArea() {
     event.target.value = '';
   };
   
-  // Only redirect if we have no messages AND no chatId AND no firstchat text
+  // Only redirect if we have no messages AND no chatId AND no firstchat text/files
   // This prevents premature redirects when loading a chat
   useEffect(() => {
-    if (!chatId && !text && messages.length === 0) {
+    if (!chatId && !text && (!firstChatFiles || firstChatFiles.length === 0) && messages.length === 0) {
       Navigate("/");
     }
-  }, [chatId, text, messages.length, Navigate]);
+  }, [chatId, text, firstChatFiles, messages.length, Navigate]);
 
   // Check if the current chat still exists
   useEffect(() => {
