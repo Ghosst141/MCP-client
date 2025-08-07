@@ -1,0 +1,205 @@
+/* File Preview Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 2rem;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.modal-content {
+    background-color: var(--bg-primary);
+    border-radius: 12px;
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow: auto;
+    position: relative;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    animation: slideIn 0.3s ease-out;
+}
+
+.modal-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border-primary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    background-color: var(--bg-primary);
+    z-index: 1;
+}
+
+.file-header-info {
+    flex: 1;
+}
+
+.file-title {
+    margin: 0;
+    font-size: 18px;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.file-meta {
+    margin: 4px 0 0 0;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.close-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    color: var(--text-primary);
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.close-button:hover {
+    background-color: var(--bg-tertiary);
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+/* Preview Content Styles */
+.preview-image {
+    max-width: 100%;
+    max-height: 80vh;
+    object-fit: contain;
+    border-radius: 8px;
+    display: block;
+    margin: 0 auto;
+}
+
+.preview-text {
+    white-space: pre-wrap;
+    max-height: 80vh;
+    overflow: auto;
+    padding: 1rem;
+    background-color: var(--bg-secondary);
+    border-radius: 8px;
+    font-size: 14px;
+    line-height: 1.4;
+    color: var(--text-primary);
+    border: 1px solid var(--border-primary);
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-color) transparent;
+}
+
+.preview-text::-webkit-scrollbar {
+    width: 8px;
+}
+
+.preview-text::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.preview-text::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-color);
+    border-radius: 4px;
+}
+
+.preview-pdf {
+    text-align: center;
+    padding: 2rem;
+}
+
+.preview-pdf p {
+    color: var(--text-primary);
+    font-size: 16px;
+    margin-bottom: 1rem;
+}
+
+.preview-unsupported {
+    text-align: center;
+    padding: 2rem;
+}
+
+.file-icon-large {
+    font-size: 48px;
+    margin-bottom: 1rem;
+}
+
+.preview-unsupported p {
+    color: var(--text-primary);
+    margin: 0.5rem 0;
+}
+
+.file-info-text {
+    color: var(--text-secondary) !important;
+    font-size: 14px;
+}
+
+.download-link {
+    color: var(--accent-primary);
+    text-decoration: underline;
+    transition: color 0.2s ease;
+    font-weight: 500;
+}
+
+.download-link:hover {
+    color: var(--accent-secondary);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .modal-overlay {
+        padding: 1rem;
+    }
+    
+    .modal-content {
+        max-width: 95vw;
+        max-height: 95vh;
+    }
+    
+    .modal-header {
+        padding: 0.75rem 1rem;
+    }
+    
+    .modal-body {
+        padding: 1rem;
+    }
+    
+    .file-title {
+        font-size: 16px;
+    }
+    
+    .file-meta {
+        font-size: 12px;
+    }
+}

@@ -1,64 +1,121 @@
 /* Theme Variables */
 :root {
-  /* Light theme colors */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8f9fa;
-  --bg-tertiary: #e9ecef;
-  --text-primary: #212529;
-  --text-secondary: #6c757d;
-  --text-tertiary: #adb5bd;
-  --border-primary: #dee2e6;
-  --border-secondary: #e9ecef;
-  --accent-primary: #3b82f6;
-  --accent-secondary: #2563eb;
-  --success: #10b981;
-  --warning: #f59e0b;
-  --error: #ef4444;
-  --shadow: rgba(0, 0, 0, 0.1);
-  --dropdown-bg: #ffffff;
-  --dropdown-border: #e5e7eb;
-  --dropdown-shadow: rgba(0, 0, 0, 0.1);
-  --input-bg: #ffffff;
-  --input-border: #d1d5db;
-  --input-border-focus: #3b82f6;
-  --modal-bg: #ffffff;
-  --modal-overlay: rgba(0, 0, 0, 0.5);
+    /* Light theme colors */
+    --bg-primary: #e3f2fd;
+    --bg-secondary: #f8f9fa;
+    --bg-tertiary: #e9ecef;
+    --text-primary: #212529;
+    --text-secondary: #6c757d;
+    --text-tertiary: #adb5bd;
+    --border-primary: #c5cbd0;
+    --border-secondary: #e9ecef;
+    --accent-primary: #3b82f6;
+    --accent-secondary: #2563eb;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --error: #ef4444;
+    --shadow: rgba(0, 0, 0, 0.1);
+    --dropdown-bg: #ffffff;
+    --dropdown-border: #e5e7eb;
+    --dropdown-shadow: rgba(0, 0, 0, 0.1);
+    --input-bg: #ffffff;
+    --input-border: #d1d5db;
+    --input-border-focus: #3b82f6;
+    --modal-bg: #ffffff;
+    --modal-overlay: rgba(0, 0, 0, 0.5);
+    --chatlink-hover: #d2d5d8;
+    --chatlink-btn: #41464a;
+    --chatlink-btn-hover: #111315;
+    --chatlink-dropdown: #f8f9fa;
+    --scrollbar-color: #ced4da;
+    --chatlink-dropdown-border: #e5e7eb;
+    --sidebar-bg: #f8f9fa;
+    --profile-shadow: rgba(100, 100, 111, 0.5) 0px 7px 29px 0px;
+    --chatlinks-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+    --chatlinks-title: #888181;
+    --chatarea-bg: #f1f3f5;
+    --welcome-text: #888;
+    --input-bg: #beeaf7;
+    --input-text: #212529;
+    --input-scrollbar: #acb5c0;
+    --input-scrollbar-bg: #ced4da;
+    --input-file-bg: #edf3f8;
+    --input-file-border: #ced4da;
+    --input-file-header: #919496;
+    --file-remove-hover: rgba(255, 68, 68, 0.3);
+    --input-btns-bg: #9c9898;
+    --send-btn-bg: #e3f2fd;
+    --border-seperator: #c5cbd0;
+    --user-chat: #10b981;
+    --ai-chat: #cccccc;
+    --ai-text: #212529;
+    --msg-file-bg: #10b981;
+    --attached-file-hover: #d1d5db;
+
 }
 
 /* Dark theme colors */
 [data-theme="dark"] {
-  --bg-primary: #1e1e1e;
-  --bg-secondary: #2c2c2c;
-  --bg-tertiary: #3a3a3a;
-  --text-primary: #ffffff;
-  --text-secondary: #adb5bd;
-  --text-tertiary: #6c757d;
-  --border-primary: #2c2c2c;
-  --border-secondary: #3a3a3a;
-  --accent-primary: #3b82f6;
-  --accent-secondary: #2563eb;
-  --success: #10b981;
-  --warning: #f59e0b;
-  --error: #ef4444;
-  --shadow: rgba(0, 0, 0, 0.3);
-  --dropdown-bg: #2e2e2e;
-  --dropdown-border: #454545;
-  --dropdown-shadow: rgba(0, 0, 0, 0.4);
-  --input-bg: #1e1e1e;
-  --input-border: #4a4a4a;
-  --input-border-focus: #3b82f6;
-  --modal-bg: #2e2e2e;
-  --modal-overlay: rgba(0, 0, 0, 0.5);
+    --bg-primary: #1e1e1e;
+    --bg-secondary: #2c2c2c;
+    --bg-tertiary: #3a3a3a;
+    --text-primary: #ffffff;
+    --text-secondary: #adb5bd;
+    --text-tertiary: #6c757d;
+    --border-primary: #2c2c2c;
+    --border-secondary: #3a3a3a;
+    --accent-primary: #3b82f6;
+    --accent-secondary: #2563eb;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --error: #ef4444;
+    --shadow: rgba(0, 0, 0, 0.3);
+    --dropdown-bg: #2e2e2e;
+    --dropdown-border: #454545;
+    --dropdown-shadow: rgba(0, 0, 0, 0.4);
+    --input-bg: #1e1e1e;
+    --input-border: #4a4a4a;
+    --input-border-focus: #3b82f6;
+    --modal-bg: #2e2e2e;
+    --modal-overlay: rgba(0, 0, 0, 0.5);
+    --chatlink-hover: #3a3b3f;
+    --chatlink-btn: #bbb;
+    --chatlink-btn-hover: #fff;
+    --chatlink-dropdown: #2c2d30;
+    --scrollbar-color: #555;
+    --chatlink-dropdown-border: #454545;
+    --sidebar-bg: #171717;
+    --profile-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+    --chatlinks-shadow: none;
+    --chatlinks-title: #afafaf;
+    --chatarea-bg: #16171a;
+    --welcome-text: #888;
+    --input-bg: #222326;
+    --input-text: #fafafa;
+    --input-scrollbar: #555;
+    --input-scrollbar-bg: #272727;
+    --input-file-bg: #2a2a2c;
+    --input-file-border:#404040;
+    --input-file-header:#ccc;
+    --file-remove-hover:rgba(255, 68, 68, 0.1);
+    --input-btns-bg: #444;
+    --send-btn-bg:none;
+    --border-seperator: #7e7e7e;
+    --user-chat: #007bff;
+    --ai-chat: #2c2d30;
+    --ai-text: #fafafa;
+    --msg-file-bg:none;
+    --attached-file-hover: #444;
 }
 
 /* Apply theme to body */
 body {
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-  transition: background-color 0.3s ease, color 0.3s ease;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Smooth transitions for all theme-aware elements */
 * {
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }

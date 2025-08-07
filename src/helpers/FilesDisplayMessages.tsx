@@ -1,12 +1,14 @@
-// import React from 'react'
-
+import { useState } from 'react';
 import type { FileAttachment } from "../types";
+import FilePreviewModal from '../components/FilePreviewModal';
+import './FilesDisplay.css';
 
 function FilesDisplayMessages({ imageFiles, otherFiles, formatFileSize }: {
     imageFiles: FileAttachment[];
     otherFiles: FileAttachment[];
     formatFileSize: (bytes: number) => string;
 }) {
+    const [previewFile, setPreviewFile] = useState<FileAttachment | null>(null);
     return (
         <>
             <div className='message-files-container'>
@@ -19,6 +21,9 @@ function FilesDisplayMessages({ imageFiles, otherFiles, formatFileSize }: {
                                 src={file.content}
                                 alt={file.name}
                                 className="file-image-preview collage-image"
+                                onClick={() => setPreviewFile(file)}
+                                style={{ cursor: 'pointer' }}
+                                title={`Click to preview ${file.name}`}
                             />
                         ))}
                     </div>
@@ -28,7 +33,13 @@ function FilesDisplayMessages({ imageFiles, otherFiles, formatFileSize }: {
                 {otherFiles.length > 0 && (
                     <div className="message-files">
                         {otherFiles.map((file, fileIndex) => (
-                            <div key={fileIndex} className="message-file-item">
+                            <div 
+                                key={fileIndex} 
+                                className="message-file-item"
+                                onClick={() => setPreviewFile(file)}
+                                style={{ cursor: 'pointer' }}
+                                title={`Click to preview ${file.name}`}
+                            >
                                 <div className="file-icon">
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
                                         xmlns="http://www.w3.org/2000/svg">
@@ -49,6 +60,15 @@ function FilesDisplayMessages({ imageFiles, otherFiles, formatFileSize }: {
                     </div>
                 )}
             </div>
+            
+            {previewFile && (
+                <FilePreviewModal
+                    file={previewFile}
+                    isOpen={!!previewFile}
+                    onClose={() => setPreviewFile(null)}
+                    formatFileSize={formatFileSize}
+                />
+            )}
         </>
     )
 }

@@ -81,7 +81,7 @@ export function useChat(chatId?: string) {
                             userId: "user123",
                             question: currentInput,
                             answer: points.join('\n'),
-                            img: currentFiles?.[0]?.content || undefined,
+                            files: currentFiles.length > 0 ? currentFiles : undefined,
                         }),
                     });
                     // Update chat timestamp to move it to top of sidebar
@@ -114,7 +114,7 @@ export function useChat(chatId?: string) {
                             userId: "user123",
                             question: currentInput,
                             answer: typeof errorResponse.text === 'string' ? errorResponse.text : errorResponse.text.join('\n'),
-                            img: currentFiles?.[0]?.content || undefined,
+                            files: currentFiles.length > 0 ? currentFiles : undefined,
                         }),
                     });
                     if (updateChatTimestamp) {
@@ -129,9 +129,86 @@ export function useChat(chatId?: string) {
         }
     };
 
+    // const handleFileUpload = async (files: FileList): Promise<void> => {
+    //     const maxFileSize = 10 * 1024 * 1024; // 10MB limit
+    //     const maxFiles = 10; // Maximum number of files allowed
+    //     const allowedTypes = [
+    //         'text/plain',
+    //         'text/csv',
+    //         'application/json',
+    //         'application/pdf',
+    //         'image/jpeg',
+    //         'image/png',
+    //         'image/gif',
+    //         'application/msword',
+    //         'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    //     ];
+
+    //     // Check if adding these files would exceed the limit
+    //     const currentFileCount = attachedFiles.length;
+    //     const newFileCount = files.length;
+
+    //     if (currentFileCount + newFileCount > maxFiles) {
+    //         alert(`Cannot upload more than ${maxFiles} files. You currently have ${currentFileCount} files and are trying to add ${newFileCount} more.`);
+    //         return;
+    //     }
+
+    //     console.log(Array.from(files));
+
+
+    //     const filePromises = Array.from(files).map(async (file): Promise<FileAttachment | null> => {
+    //         // Check file size
+    //         if (file.size > maxFileSize) {
+    //             alert(`File "${file.name}" is too large. Maximum size is 10MB.`);
+    //             return null;
+    //         }
+
+    //         console.log(file.type);
+    //         // Check file type
+    //         if (!allowedTypes.includes(file.type)) {
+    //             alert(`File type "${file.type}" is not supported for "${file.name}".`);
+    //             return null;
+    //         }
+
+    //         try {
+    //             let content: string;
+
+    //             if (file.type.startsWith('text/') || file.type === 'application/json') {
+    //                 // Read text files directly
+    //                 content = await readFileAsText(file);
+    //             } else if (file.type.startsWith('image/')) {
+    //                 // Convert images to base64
+    //                 content = await readFileAsDataURL(file);
+    //             } else {
+    //                 // For other files, convert to base64
+    //                 content = await readFileAsDataURL(file);
+    //             }
+
+    //             return {
+    //                 name: file.name,
+    //                 size: file.size,
+    //                 type: file.type,
+    //                 content: content,
+    //                 lastModified: file.lastModified
+    //             };
+    //         } catch (error) {
+    //             console.error(`Error reading file "${file.name}":`, error);
+    //             alert(`Failed to read file "${file.name}".`);
+    //             return null;
+    //         }
+    //     });
+
+    //     const processedFiles = await Promise.all(filePromises);
+    //     const validFiles = processedFiles.filter((file): file is FileAttachment => file !== null);
+
+    //     setAttachedFiles(prev => [...prev, ...validFiles]);
+    //     console.log("attached files", attachedFiles);
+
+    // };
+
     const handleFileUpload = async (files: FileList): Promise<void> => {
         const maxFileSize = 10 * 1024 * 1024; // 10MB limit
-        const maxFiles = 10; // Maximum number of files allowed
+        const maxFiles = 10;
         const allowedTypes = [
             'text/plain',
             'text/csv',
@@ -144,51 +221,43 @@ export function useChat(chatId?: string) {
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
         ];
 
-        // Check if adding these files would exceed the limit
         const currentFileCount = attachedFiles.length;
-        const newFileCount = files.length;
+        const availableSlots = maxFiles - currentFileCount;
 
-        if (currentFileCount + newFileCount > maxFiles) {
-            alert(`Cannot upload more than ${maxFiles} files. You currently have ${currentFileCount} files and are trying to add ${newFileCount} more.`);
+        if (availableSlots <= 0) {
+            alert(`You already uploaded the maximum of ${maxFiles} files.`);
             return;
         }
 
-        console.log(Array.from(files));
+        const allFiles = Array.from(files);
 
+        if (allFiles.length > availableSlots) {
+            alert(`You can only upload ${availableSlots} more file(s). Only the first ${availableSlots} will be added.`);
+        }
 
-        const filePromises = Array.from(files).map(async (file): Promise<FileAttachment | null> => {
-            // Check file size
+        const filesToProcess = allFiles.slice(0, availableSlots);  // take only up to the allowed number
+
+        const filePromises = filesToProcess.map(async (file): Promise<FileAttachment | null> => {
             if (file.size > maxFileSize) {
                 alert(`File "${file.name}" is too large. Maximum size is 10MB.`);
                 return null;
             }
 
-            console.log(file.type);
-            // Check file type
             if (!allowedTypes.includes(file.type)) {
                 alert(`File type "${file.type}" is not supported for "${file.name}".`);
                 return null;
             }
 
             try {
-                let content: string;
-
-                if (file.type.startsWith('text/') || file.type === 'application/json') {
-                    // Read text files directly
-                    content = await readFileAsText(file);
-                } else if (file.type.startsWith('image/')) {
-                    // Convert images to base64
-                    content = await readFileAsDataURL(file);
-                } else {
-                    // For other files, convert to base64
-                    content = await readFileAsDataURL(file);
-                }
+                const content = file.type.startsWith('text/') || file.type === 'application/json'
+                    ? await readFileAsText(file)
+                    : await readFileAsDataURL(file);
 
                 return {
                     name: file.name,
                     size: file.size,
                     type: file.type,
-                    content: content,
+                    content,
                     lastModified: file.lastModified
                 };
             } catch (error) {
@@ -202,9 +271,8 @@ export function useChat(chatId?: string) {
         const validFiles = processedFiles.filter((file): file is FileAttachment => file !== null);
 
         setAttachedFiles(prev => [...prev, ...validFiles]);
-        console.log("attached files", attachedFiles);
-
     };
+
 
     const readFileAsText = (file: File): Promise<string> => {
         return new Promise((resolve, reject) => {

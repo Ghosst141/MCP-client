@@ -68,7 +68,7 @@ const sendInitialMessage = async (
             userId: "user123", // replace with real user
             question: text,
             answer: errorResponse.text,
-            img: attachedFiles?.[0] || undefined,
+            files: attachedFiles.length > 0 ? attachedFiles : undefined,
           }),
         });
       } catch (error) {

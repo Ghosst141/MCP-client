@@ -51,7 +51,8 @@ export default function Dashboard() {
                 },
                 body: JSON.stringify({
                     userId,
-                    text: input.trim()
+                    text: input.trim(),
+                    files: attachedFiles.length > 0 ? attachedFiles : undefined
                 })
             });
             

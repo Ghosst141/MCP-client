@@ -1,0 +1,45 @@
+/* Files Display Chat Styles */
+.attached-file-item {
+    transition: all 0.2s ease;
+}
+
+.attached-file-item:hover {
+    background: var(--attached-file-hover);
+    /* transform: translateY(-1px); */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.file-info {
+    transition: color 0.2s ease;
+}
+
+.file-info:hover .file-name {
+    color: var(--accent-primary);
+}
+
+/* Message Files Display Styles */
+.message-file-item {
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.message-file-item:hover {
+    background: var(--attached-file-hover);
+    /* transform: translateY(-1px); */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.message-file-item:hover .file-name {
+    color: var(--accent-primary);
+}
+
+.collage-image {
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.collage-image:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    border-color: var(--accent-primary);
+}

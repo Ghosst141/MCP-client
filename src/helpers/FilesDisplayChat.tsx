@@ -1,10 +1,14 @@
-// import React from 'react'
+import { useState } from 'react';
+import type { FileAttachment } from '../types';
+import FilePreviewModal from '../components/FilePreviewModal';
+import './FilesDisplay.css';
 
 function FilesDisplayChat({ attachedFiles, removeAttachedFile, formatFileSize }: {
-    attachedFiles: { name: string; size: number }[];
+    attachedFiles: FileAttachment[];
     removeAttachedFile: (index: number) => void;
     formatFileSize: (bytes: number) => string;
 }) {
+    const [previewFile, setPreviewFile] = useState<FileAttachment | null>(null);
     return (
         <>
             {attachedFiles.length > 0 && (
@@ -15,7 +19,15 @@ function FilesDisplayChat({ attachedFiles, removeAttachedFile, formatFileSize }:
                     <div className="attached-files-list">
                         {attachedFiles.map((file, index) => (
                             <div key={index} className="attached-file-item">
-                                <div className="file-info">
+                                <div 
+                                    className="file-info"
+                                    onClick={() => setPreviewFile(file)}
+                                    style={{ 
+                                        cursor: 'pointer',
+                                        flex: 1
+                                    }}
+                                    title="Click to preview"
+                                >
                                     <div className="file-name">{file.name}</div>
                                     <div className="file-size">{formatFileSize(file.size)}</div>
                                 </div>
@@ -32,6 +44,15 @@ function FilesDisplayChat({ attachedFiles, removeAttachedFile, formatFileSize }:
                         ))}
                     </div>
                 </div>
+            )}
+            
+            {previewFile && (
+                <FilePreviewModal
+                    file={previewFile}
+                    isOpen={!!previewFile}
+                    onClose={() => setPreviewFile(null)}
+                    formatFileSize={formatFileSize}
+                />
             )}
         </>
     )

@@ -37,7 +37,7 @@
 }
 
 .header-label:hover{
-    background-color: var(--bg-tertiary);
+    background-color: var(--text-secondary);
 }
 
 .label-arrow {
@@ -117,7 +117,7 @@
 
 .dropdown-separator {
   height: 1px;
-  background-color: var(--border-primary);
+  background-color: var(--border-seperator);
   margin: 8px 4px;
 }
 
@@ -137,11 +137,13 @@
   border-radius: 0.5rem;
 }
 .sidebar-header-btn:hover {
-  background-color: var(--bg-tertiary);
+  background-color: var(--text-secondary);
 }
 
 .theme-toggle {
-  position: relative;
+  position: absolute;
+  right: 0;
+  margin-right: 1rem;
 }
 
 .theme-toggle svg {

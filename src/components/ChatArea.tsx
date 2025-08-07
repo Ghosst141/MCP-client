@@ -71,13 +71,8 @@ export default function ChatArea() {
         }
 
         const mappedMessages: Message[] = data.history.map((item: any) => {
-          const files: FileAttachment[] | undefined = item.img
-            ? [{
-              name: 'image.png', // fallback name
-              size: 0,           // can't know without more info
-              type: 'image/png', // infer from extension if possible
-              content: item.img,
-            }]
+          const files: FileAttachment[] | undefined = item.files && item.files.length > 0
+            ? item.files
             : undefined;
 
           return {

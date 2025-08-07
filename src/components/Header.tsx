@@ -12,13 +12,13 @@ const Header = () => {
     const [apiKey, setApiKey] = useState("");
     const [tempApiKey, setTempApiKey] = useState("");
     const [selectedModel, setSelectedModel] = useState<ModelName>("ChatGPT");
-    const [keyError,setKeyError] = useState<boolean>(false);
+    const [keyError, setKeyError] = useState<boolean>(false);
 
     const dropdownRef = useClickOutside(() => setOpen(false));
     const context = useContext(SideContext);
     if (!context) throw new Error("SidebarContext is undefined");
     const { isSideopen, toggleSidebar, setSelectedChatId } = context;
-    
+
     const { theme, toggleTheme } = useTheme();
 
     const Navigate = useNavigate();
@@ -49,7 +49,7 @@ const Header = () => {
             setTempApiKey("");
             setOpen(false);
         }
-        else{
+        else {
             setKeyError(true);
         }
     }, [tempApiKey, selectedModel]);
@@ -94,7 +94,6 @@ const Header = () => {
 
     return (
         <div className="header">
-
             {!isSideopen && <div className="sidebar-btns">
                 {/* The onClick handler now calls the onToggle function from props */}
                 <button className="sidebar-header-btn" onClick={toggleSidebar}>
@@ -108,21 +107,11 @@ const Header = () => {
                 </button>
 
                 {/* Theme Toggle Button */}
-                <button className="sidebar-header-btn theme-toggle" onClick={toggleTheme} title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
-                    {theme === 'dark' ? (
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 3V4M12 20V21M4 12H3M6.31412 6.31412L5.5 5.5M17.6859 6.31412L18.5 5.5M6.31412 17.69L5.5 18.5M17.6859 17.69L18.5 18.5M21 12H20M16 12C16 14.2091 14.2091 16 12 16C9.79086 16 8 14.2091 8 12C8 9.79086 9.79086 8 12 8C14.2091 8 16 9.79086 16 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                    ) : (
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                    )}
-                </button>
             </div>}
+            
 
             <div className='header-dropdown' ref={dropdownRef}>
-                <button className="header-label" onClick={() => {setOpen(!open); setKeyError(false)}}>
+                <button className="header-label" onClick={() => { setOpen(!open); setKeyError(false) }}>
                     <span className="label-text">{selectedModel}</span>
                     <span className="label-arrow"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg" className="icon-sm text-token-text-tertiary"><path d="M12.1338 5.94433C12.3919 5.77382 12.7434 5.80202 12.9707 6.02929C13.1979 6.25656 13.2261 6.60807 13.0556 6.8662L12.9707 6.9707L8.47067 11.4707C8.21097 11.7304 7.78896 11.7304 7.52926 11.4707L3.02926 6.9707L2.9443 6.8662C2.77379 6.60807 2.80199 6.25656 3.02926 6.02929C3.25653 5.80202 3.60804 5.77382 3.86617 5.94433L3.97067 6.02929L7.99996 10.0586L12.0293 6.02929L12.1338 5.94433Z"></path></svg></span>
                 </button>
@@ -134,8 +123,8 @@ const Header = () => {
                             <div className="details">
                                 <div className="title">Set API Key</div>
                                 <div className="subtitle">
-                                    {apiKey 
-                                        ? `API key configured for ${selectedModel}` 
+                                    {apiKey
+                                        ? `API key configured for ${selectedModel}`
                                         : `Configure API key for ${selectedModel}`
                                     }
                                 </div>
@@ -184,6 +173,18 @@ const Header = () => {
                 )}
             </div>
 
+            <button className="sidebar-header-btn theme-toggle" onClick={toggleTheme} title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
+                {theme === 'dark' ? (
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 3V4M12 20V21M4 12H3M6.31412 6.31412L5.5 5.5M17.6859 6.31412L18.5 5.5M6.31412 17.69L5.5 18.5M17.6859 17.69L18.5 18.5M21 12H20M16 12C16 14.2091 14.2091 16 12 16C9.79086 16 8 14.2091 8 12C8 9.79086 9.79086 8 12 8C14.2091 8 16 9.79086 16 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                ) : (
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                )}
+            </button>
+
             {/* API Key Input Modal */}
             {showAPIInput && (
                 <div className="api-key-overlay">
@@ -193,16 +194,16 @@ const Header = () => {
                         {
                             keyError && (<p className='error-key'>Please Enter Api key before submit</p>)
                         }
-                        
+
                         <input
                             type="password"
                             value={tempApiKey}
-                            onChange={(e) => {setTempApiKey(e.target.value); setKeyError(false);}}
+                            onChange={(e) => { setTempApiKey(e.target.value); setKeyError(false); }}
                             placeholder={
                                 selectedModel === 'ChatGPT' || selectedModel === 'GPT-4' ? 'sk-...' :
-                                selectedModel === 'Gemini' ? 'AI...' :
-                                selectedModel === 'Claude' ? 'sk-ant-...' :
-                                'Enter API key...'
+                                    selectedModel === 'Gemini' ? 'AI...' :
+                                        selectedModel === 'Claude' ? 'sk-ant-...' :
+                                            'Enter API key...'
                             }
                             className="api-key-input"
                             autoFocus
