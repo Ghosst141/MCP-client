@@ -14,7 +14,7 @@ const formatFileSize = (bytes: number): string => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
-function ChatMessage({ msg, index }: { msg: Message; index: number }) {
+function ChatMessage({ msg, index, isStreaming = false }: { msg: Message; index: number; isStreaming?: boolean }) {
     const imageFiles = msg.files?.filter(file => file.type.startsWith('image/')) || [];
     const otherFiles = msg.files?.filter(file => !file.type.startsWith('image/')) || [];
 
@@ -28,9 +28,11 @@ function ChatMessage({ msg, index }: { msg: Message; index: number }) {
                         formatFileSize={formatFileSize}
                     />
                 )}
-                {(msg.text && msg.text !== '') || (msg.sender === 'ai' && Array.isArray(msg.text)) ? (
+                {(msg.text && msg.text !== '') || (msg.sender === 'ai' && Array.isArray(msg.text)) || (isStreaming && msg.sender === 'ai') ? (
                     <div key={index} className={`message ${msg.sender}`}>
-                        {msg.sender === 'ai' && Array.isArray(msg.text) ? (
+                        {isStreaming && (!msg.text || msg.text === '') ? (
+                            <div></div>
+                        ) : msg.sender === 'ai' && Array.isArray(msg.text) ? (
                             <ul>
                                 {msg.text.map((point, i) => (
                                     <li key={i}>{point}</li>

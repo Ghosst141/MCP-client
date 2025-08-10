@@ -1,41 +1,88 @@
-import { useContext, useState } from "react";
+import { useContext, useState, useEffect } from "react";
 import type { Message, FileAttachment } from "../types/index";
 import { chatContext } from "../contexts/ChatContext";
 import useChatModel from "./useChatModel";
+import { saveModelMessage, saveUserMessage } from "../helpers/chatArea";
 
 export function useChat(chatId?: string) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
+    const [fileLoading, setFileLoading] = useState(false);
+    const [streamingMessageId, setStreamingMessageId] = useState<number | null>(null);
+    const [currentChatId, setCurrentChatId] = useState<string | undefined>(chatId);
     const [mcpOption, setMcpOption] = useState('select');
     const [attachedFiles, setAttachedFiles] = useState<FileAttachment[]>([]);
 
     const context = useContext(chatContext);
     const updateChatTimestamp = context?.updateChatTimestamp;
     const geminiModel = useChatModel(); // Add Gemini model
+    const pushOngoingChat = context?.pushOngoingChat;
+    const popOngoingChat = context?.popOngoingChat;
+
+    // Cleanup when chat changes
+    useEffect(() => {
+        if (currentChatId !== chatId) {
+            // Clear streaming state when switching chats
+            setStreamingMessageId(null);
+            setLoading(false);
+            setFileLoading(false);
+            setCurrentChatId(chatId);
+        }
+    }, [chatId, currentChatId]);
 
     const handleSend = async (textareaRef: React.RefObject<HTMLDivElement | null>): Promise<void> => {
         if (!input.trim() && attachedFiles.length === 0) return;
 
-        const userMessage: Message = {
-            sender: 'user',
-            text: input.trim(),
-            files: attachedFiles.length > 0 ? [...attachedFiles] : undefined,
-            timestamp: Date.now()
-        };
-        setMessages(prev => [...prev, userMessage]);
-
+        // Store values before clearing state
         const currentInput = input.trim();
         const currentFiles = [...attachedFiles];
-        setInput('');
-        setAttachedFiles([]);
-        setLoading(true);
-        if (textareaRef.current) {
-            textareaRef.current.innerHTML = '';
-            textareaRef.current.innerText = '';
+        const sendingToChatId = chatId;
+
+        if (!sendingToChatId) {
+            console.error('No chat ID available');
+            return;
         }
 
+        // Set loading state first
+        let aiMessageId: number | null = null; // Declare outside try-catch to access in error handling
+
         try {
+            // 1. Save user message to database FIRST
+            const isUserMessageSaved = await saveUserMessage(
+                sendingToChatId,
+                "user123",
+                currentInput,
+                currentFiles,
+                updateChatTimestamp as (chatId: string) => void
+            );
+
+            if (!isUserMessageSaved) {
+                setLoading(false); // Reset loading state
+                return;
+            }
+
+            // 2. Only clear UI state AFTER successful save
+            const userMessage: Message = {
+                sender: 'user',
+                text: currentInput,
+                files: currentFiles.length > 0 ? currentFiles : undefined,
+                timestamp: Date.now()
+            };
+            setMessages(prev => [...prev, userMessage]);
+            setLoading(true);
+
+            setInput('');
+            setAttachedFiles([]);
+
+            if (textareaRef.current) {
+                textareaRef.current.innerHTML = '';
+                textareaRef.current.innerText = '';
+            }
+
+            // 3. Generate AI response
+            // aiMessageId is already declared above
+
             // Check if Gemini model is loaded
             if (!geminiModel) {
                 throw new Error('Gemini model not loaded yet');
@@ -48,220 +95,199 @@ export function useChat(chatId?: string) {
                 prompt = prompt ? `${prompt}\n\nAttached files: ${fileInfo}` : `Analyze these files: ${fileInfo}`;
             }
 
-            // Call Gemini API
-            const result = await geminiModel.generateContent(prompt);
-            const responseText = result.response.text();
+            // Call Gemini API with streaming
+            const result = await geminiModel.generateContentStream(prompt);
+            let fullResponse = '';
 
-            // Store raw response
-            const aiResponse: Message = {
-                sender: 'ai',
-                text: responseText,
-                timestamp: Date.now()
-            };
-            setMessages(prev => [...prev, aiResponse]);
+            // Process the streaming response
+            for await (const chunk of result.stream) {
+                const chunkText = chunk.text();
+                fullResponse += chunkText;
 
-            // Save the conversation to database if chatId is provided
-            if (chatId) {
-                try {
-                    await fetch(`http://localhost:3000/api/chats/${chatId}`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            userId: "user123",
-                            question: currentInput,
-                            answer: responseText,
-                            files: currentFiles.length > 0 ? currentFiles : undefined,
-                        }),
-                    });
-                    // Update chat timestamp to move it to top of sidebar
-                    if (updateChatTimestamp) {
-                        updateChatTimestamp(chatId);
+                // Create AI message on first chunk
+                if (aiMessageId === null) {
+                    aiMessageId = Date.now() + Math.random(); // Prevent collisions
+                    const aiResponse: Message = {
+                        sender: 'ai',
+                        text: fullResponse,
+                        timestamp: aiMessageId
+                    };
+                    setMessages(prev => [...prev, aiResponse]);
+                    if (pushOngoingChat) {
+                        pushOngoingChat(chatId || "", aiMessageId);
                     }
-                } catch (dbError) {
-                    console.error('Error saving conversation to database:', dbError);
+                    // Only show streaming indicator if we're still in the same chat
+                    if (chatId === sendingToChatId) {
+                        setStreamingMessageId(aiMessageId);
+                    }
+                } else {
+                    // Update the AI message in real-time
+                    setMessages(prev =>
+                        prev.map(msg =>
+                            msg.timestamp === aiMessageId
+                                ? { ...msg, text: fullResponse }
+                                : msg
+                        )
+                    );
                 }
+            }
+
+            // Clear streaming state only if we're still in the same chat
+            if (aiMessageId !== null && chatId === sendingToChatId) {
+                setStreamingMessageId(null);
+            }
+
+            // 4. Save AI response to database
+            if (fullResponse && aiMessageId !== null) {
+                const isModelMessageSaved = await saveModelMessage(
+                    sendingToChatId,
+                    "user123",
+                    fullResponse
+                );
+                
+                // Always clean up ongoing chat using the original sending chat ID
+                if (popOngoingChat) {
+                    popOngoingChat(sendingToChatId, aiMessageId); // Use sendingToChatId for consistency
+                }
+
+                if (!isModelMessageSaved) {
+                    console.error('Failed to save AI response to database');
+                    // Don't return early - response is already shown to user
+                }
+
             }
 
         } catch (error) {
             console.error('Error contacting backend:', error);
-            const errorResponse: Message = {
-                sender: 'ai',
-                text: `Error: Failed to get response from Gemini. ${error instanceof Error ? error.message : 'Please try again.'}`,
-                timestamp: Date.now()
-            };
-            setMessages(prev => [...prev, errorResponse]);
+            const errorText = `Error: Failed to get response from Gemini. ${error instanceof Error ? error.message : 'Please try again.'}`;
 
-            // Save error response to database if chatId is provided
-            if (chatId) {
+            // Only update state if we're still on the same chat
+            if (chatId === sendingToChatId) {
+                // Clear streaming state
+                setStreamingMessageId(null);
+
+                // Add error message
+                const errorMessageId = Date.now() + Math.random();
+                const errorResponse: Message = {
+                    sender: 'ai',
+                    text: errorText,
+                    timestamp: errorMessageId
+                };
+                setMessages(prev => [...prev, errorResponse]);
+
+                // Save error response to database
                 try {
-                    await fetch(`http://localhost:3000/api/chats/${chatId}`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            userId: "user123",
-                            question: currentInput,
-                            answer: errorResponse.text,
-                            files: currentFiles.length > 0 ? currentFiles : undefined,
-                        }),
-                    });
-                    if (updateChatTimestamp) {
-                        updateChatTimestamp(chatId);
-                    }
+                    await saveModelMessage(
+                        sendingToChatId,
+                        "user123",
+                        errorText
+                    );
                 } catch (dbError) {
-                    console.error('Error saving error response to database:', dbError);
+                    console.error('Failed to save error response to database:', dbError);
                 }
             }
+            
+            // Clean up ongoing chat even if we switched tabs - use the AI message ID from this request
+            if (popOngoingChat && aiMessageId !== null) {
+                popOngoingChat(sendingToChatId, aiMessageId);
+            }
         } finally {
-            setLoading(false);
+            // Always reset loading state
+            if (chatId === sendingToChatId) {
+                setLoading(false);
+            }
+
         }
     };
 
-    // const handleFileUpload = async (files: FileList): Promise<void> => {
-    //     const maxFileSize = 10 * 1024 * 1024; // 10MB limit
-    //     const maxFiles = 10; // Maximum number of files allowed
-    //     const allowedTypes = [
-    //         'text/plain',
-    //         'text/csv',
-    //         'application/json',
-    //         'application/pdf',
-    //         'image/jpeg',
-    //         'image/png',
-    //         'image/gif',
-    //         'application/msword',
-    //         'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    //     ];
-
-    //     // Check if adding these files would exceed the limit
-    //     const currentFileCount = attachedFiles.length;
-    //     const newFileCount = files.length;
-
-    //     if (currentFileCount + newFileCount > maxFiles) {
-    //         alert(`Cannot upload more than ${maxFiles} files. You currently have ${currentFileCount} files and are trying to add ${newFileCount} more.`);
-    //         return;
-    //     }
-
-    //     console.log(Array.from(files));
-
-
-    //     const filePromises = Array.from(files).map(async (file): Promise<FileAttachment | null> => {
-    //         // Check file size
-    //         if (file.size > maxFileSize) {
-    //             alert(`File "${file.name}" is too large. Maximum size is 10MB.`);
-    //             return null;
-    //         }
-
-    //         console.log(file.type);
-    //         // Check file type
-    //         if (!allowedTypes.includes(file.type)) {
-    //             alert(`File type "${file.type}" is not supported for "${file.name}".`);
-    //             return null;
-    //         }
-
-    //         try {
-    //             let content: string;
-
-    //             if (file.type.startsWith('text/') || file.type === 'application/json') {
-    //                 // Read text files directly
-    //                 content = await readFileAsText(file);
-    //             } else if (file.type.startsWith('image/')) {
-    //                 // Convert images to base64
-    //                 content = await readFileAsDataURL(file);
-    //             } else {
-    //                 // For other files, convert to base64
-    //                 content = await readFileAsDataURL(file);
-    //             }
-
-    //             return {
-    //                 name: file.name,
-    //                 size: file.size,
-    //                 type: file.type,
-    //                 content: content,
-    //                 lastModified: file.lastModified
-    //             };
-    //         } catch (error) {
-    //             console.error(`Error reading file "${file.name}":`, error);
-    //             alert(`Failed to read file "${file.name}".`);
-    //             return null;
-    //         }
-    //     });
-
-    //     const processedFiles = await Promise.all(filePromises);
-    //     const validFiles = processedFiles.filter((file): file is FileAttachment => file !== null);
-
-    //     setAttachedFiles(prev => [...prev, ...validFiles]);
-    //     console.log("attached files", attachedFiles);
-
-    // };
 
     const handleFileUpload = async (files: FileList): Promise<void> => {
-        const maxFileSize = 10 * 1024 * 1024; // 10MB limit
-        const maxFiles = 10;
-        const allowedTypes = [
-            'text/plain',
-            'text/csv',
-            'application/json',
-            'application/pdf',
-            'image/jpeg',
-            'image/png',
-            'image/gif',
-            'application/msword',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-        ];
-
-        const currentFileCount = attachedFiles.length;
-        const availableSlots = maxFiles - currentFileCount;
-
-        if (availableSlots <= 0) {
-            alert(`You already uploaded the maximum of ${maxFiles} files.`);
+        if (fileLoading) {
+            alert('Please wait, files are still being processed...');
             return;
         }
 
-        const allFiles = Array.from(files);
+        setFileLoading(true);
 
-        if (allFiles.length > availableSlots) {
-            alert(`You can only upload ${availableSlots} more file(s). Only the first ${availableSlots} will be added.`);
+        try {
+            const maxFileSize = 10 * 1024 * 1024; // 10MB limit
+            const maxFiles = 10;
+            const allowedTypes = [
+                'text/plain',
+                'text/csv',
+                'application/json',
+                'application/pdf',
+                'image/jpeg',
+                'image/png',
+                'image/gif',
+                'application/msword',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            ];
+
+            const currentFileCount = attachedFiles.length;
+            const availableSlots = maxFiles - currentFileCount;
+
+            if (availableSlots <= 0) {
+                alert(`You already uploaded the maximum of ${maxFiles} files.`);
+                return;
+            }
+
+            const allFiles = Array.from(files);
+
+            if (allFiles.length > availableSlots) {
+                alert(`You can only upload ${availableSlots} more file(s). Only the first ${availableSlots} will be added.`);
+            }
+
+            const filesToProcess = allFiles.slice(0, availableSlots);  // take only up to the allowed number
+
+            const rejectedFiles: string[] = [];
+            const validFiles: FileAttachment[] = [];
+
+            for (const file of filesToProcess) {
+                // Check file size
+                if (file.size > maxFileSize) {
+                    rejectedFiles.push(`"${file.name}" (too large - maximum size is 10MB)`);
+                    continue;
+                }
+
+                // Check file type
+                if (!allowedTypes.includes(file.type)) {
+                    rejectedFiles.push(`"${file.name}" (unsupported file type: ${file.type})`);
+                    continue;
+                }
+
+                try {
+                    const content = file.type.startsWith('text/') || file.type === 'application/json'
+                        ? await readFileAsText(file)
+                        : await readFileAsDataURL(file);
+
+                    validFiles.push({
+                        name: file.name,
+                        size: file.size,
+                        type: file.type,
+                        content,
+                        lastModified: file.lastModified
+                    });
+                } catch (error) {
+                    console.error(`Error reading file "${file.name}":`, error);
+                    rejectedFiles.push(`"${file.name}" (failed to read file)`);
+                }
+            }
+
+            // Show alert for rejected files if any
+            if (rejectedFiles.length > 0) {
+                const rejectedCount = rejectedFiles.length;
+                const uploadedCount = validFiles.length;
+                alert(`${rejectedCount} file(s) were rejected:\n\n${rejectedFiles.join('\n')}\n\n${uploadedCount} file(s) uploaded successfully.`);
+            }
+
+            setAttachedFiles(prev => [...prev, ...validFiles]);
+        } catch (error) {
+            console.error('Error during file upload:', error);
+            alert('An error occurred while uploading files. Please try again.');
+        } finally {
+            setFileLoading(false);
         }
-
-        const filesToProcess = allFiles.slice(0, availableSlots);  // take only up to the allowed number
-
-        const filePromises = filesToProcess.map(async (file): Promise<FileAttachment | null> => {
-            if (file.size > maxFileSize) {
-                alert(`File "${file.name}" is too large. Maximum size is 10MB.`);
-                return null;
-            }
-
-            if (!allowedTypes.includes(file.type)) {
-                alert(`File type "${file.type}" is not supported for "${file.name}".`);
-                return null;
-            }
-
-            try {
-                const content = file.type.startsWith('text/') || file.type === 'application/json'
-                    ? await readFileAsText(file)
-                    : await readFileAsDataURL(file);
-
-                return {
-                    name: file.name,
-                    size: file.size,
-                    type: file.type,
-                    content,
-                    lastModified: file.lastModified
-                };
-            } catch (error) {
-                console.error(`Error reading file "${file.name}":`, error);
-                alert(`Failed to read file "${file.name}".`);
-                return null;
-            }
-        });
-
-        const processedFiles = await Promise.all(filePromises);
-        const validFiles = processedFiles.filter((file): file is FileAttachment => file !== null);
-
-        setAttachedFiles(prev => [...prev, ...validFiles]);
     };
 
 
@@ -327,6 +353,9 @@ export function useChat(chatId?: string) {
         setInput,
         messages,
         loading,
+        fileLoading,
+        streamingMessageId,
+        setStreamingMessageId,
         mcpOption,
         setMcpOption,
         handleSend,

@@ -1,92 +1,90 @@
-import type { FileAttachment, Message } from "../types";
+// import type { FileAttachment, Message } from "../types";
 
-const sendInitialMessage = async (
-  text: string,
-  attachedFiles: FileAttachment[],
-  setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
-  setLoading: React.Dispatch<React.SetStateAction<boolean>>,
-  mcpOption: string,
-  chatId: string | undefined
+import type { FileAttachment } from "../types";
+
+const saveAiMessage = async (
+  chatId: string,
+  userID: string,
+  fullResponse: string,
+  updateChatTimestamp: (chatId: string) => void,
+  refreshChats: () => void
 ) => {
-  const userMessage: Message = {
-    sender: 'user',
-    text: text,
-    files: attachedFiles.length > 0 ? [...attachedFiles] : undefined,
-    timestamp: Date.now()
-  };
-
-  setMessages(prev => [...prev, userMessage]);
-  setLoading(true);
-
-  const apiUrl = 'http://localhost:3001/query';
-
   try {
-    const formData = new FormData();
-    formData.append('query', text);
-    formData.append('mode', mcpOption);
-
-    // Add files to form data if they exist
-    if (attachedFiles.length > 0) {
-      formData.append('filesData', JSON.stringify(attachedFiles.map(file => ({
-        name: file.name,
-        type: file.type,
-        size: file.size,
-        content: file.content
-      }))));
-    }
-
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      body: formData,
+    await fetch(`http://localhost:3000/api/chats/${chatId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId: userID,
+        answer: fullResponse,
+      }),
     });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    const responseText: string = data.content;
-
-    // Store raw response instead of splitting into points
-    const aiResponse: Message = {
-      sender: 'ai',
-      text: responseText, // Keep raw response
-      timestamp: Date.now()
-    };
-
-    setMessages(prev => [...prev, aiResponse]);
-
+    updateChatTimestamp(chatId);
+    refreshChats();
   } catch (error) {
-    console.error('Error contacting backend:', error);
-    const errorResponse: Message = {
-      sender: 'ai',
-      text: `Error: Failed to get response for ${mcpOption} mode. Please check the console and try again.`,
-      timestamp: Date.now()
-    };
-    setMessages(prev => [...prev, errorResponse]);
-    if (chatId) {
-      try {
-        await fetch(`http://localhost:3000/api/chats/${chatId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            userId: "user123", // replace with real user
-            question: text,
-            answer: errorResponse.text,
-            files: attachedFiles.length > 0 ? attachedFiles : undefined,
-          }),
-        });
-      } catch (error) {
-        console.error('Error saving chat to database:', error);
-      }
-    }
-    
-  } finally {
-    setLoading(false);
-    
+    console.error('Error saving AI response to database:', error);
   }
 };
 
-export { sendInitialMessage };
+const saveUserMessage = async (
+  chatId: string,
+  userID: string,
+  question: string,
+  files: FileAttachment[],
+  updateChatTimestamp: (chatId: string) => void,
+) => {
+  try {
+    const response = await fetch(`http://localhost:3000/api/chats/${chatId}/user`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId: userID,
+        question,
+        files,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    updateChatTimestamp(chatId);
+    return true;
+  } catch (error) {
+    console.error('Error saving user message:', error);
+    return false;
+  }
+};
+
+const saveModelMessage = async(
+  chatId: string,
+  userID: string,
+  answer: string,
+)=>{
+  try {
+    const response = await fetch(`http://localhost:3000/api/chats/${chatId}/ai`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId: userID,
+        answer,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error saving AI message:', error);
+    return false;
+  }
+}
+
+export { saveAiMessage, saveUserMessage, saveModelMessage };

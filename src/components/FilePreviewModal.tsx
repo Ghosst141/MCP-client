@@ -9,7 +9,14 @@ interface FilePreviewModalProps {
 }
 
 function FilePreviewModal({ file, isOpen, onClose, formatFileSize }: FilePreviewModalProps) {
-    if (!isOpen) return null;
+    if (!isOpen || !file) return null;
+
+    // Validate file data
+    const isValidFile = file && file.name && file.type && typeof file.size === 'number';
+    if (!isValidFile) {
+        console.error('Invalid file data:', file);
+        return null;
+    }
 
     const renderPreview = () => {
         if (file.type.startsWith('image/')) {

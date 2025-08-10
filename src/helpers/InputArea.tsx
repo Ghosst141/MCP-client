@@ -3,13 +3,24 @@ import type { FileAttachment } from '../types/index'
 // import { useChat } from '../hooks/useChat';
 import FilesDisplayChat from './FilesDisplayChat';
 
-// Utility function to format file size
+// Utility function to format file size with error handling
 const formatFileSize = (bytes: number): string => {
+    // Handle edge cases
+    if (!bytes || bytes < 0 || !isFinite(bytes)) return '0 Bytes';
     if (bytes === 0) return '0 Bytes';
+    
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    
+    // Ensure index is within bounds
+    const sizeIndex = Math.min(i, sizes.length - 1);
+    const size = parseFloat((bytes / Math.pow(k, sizeIndex)).toFixed(2));
+    
+    // Handle very large numbers
+    if (!isFinite(size)) return 'File too large';
+    
+    return size + ' ' + sizes[sizeIndex];
 };
 
 function InputArea({ input,
@@ -18,6 +29,7 @@ function InputArea({ input,
     handleKeyDown,
     handlePaste,
     loading,
+    fileLoading,
     handleSend,
     // mcpOption,
     setMcpOption,
@@ -34,6 +46,7 @@ function InputArea({ input,
         handleKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => void;
         handlePaste: (e: React.ClipboardEvent<HTMLDivElement>) => void;
         loading: boolean;
+        fileLoading: boolean;
         handleSend: (textareaRef: React.RefObject<HTMLDivElement | null>) => Promise<void>;
         mcpOption: string;
         setMcpOption: React.Dispatch<React.SetStateAction<string>>;
@@ -54,7 +67,8 @@ function InputArea({ input,
                     <FilesDisplayChat
                         attachedFiles={attachedFiles}
                         removeAttachedFile={removeAttachedFile}
-                        formatFileSize={formatFileSize} />
+                        formatFileSize={formatFileSize}
+                        fileLoading={fileLoading} />
                 </div>
                 <div className='chat-textarea-wrapper'>
                     {(!input) && (
@@ -70,14 +84,13 @@ function InputArea({ input,
                             const element = e.target as HTMLDivElement;
                             const text = element.textContent || '';
                             setInput(text)
-                            if (text === '') {
-                                element.innerHTML = '';
-                            }
+                            // if (text === '') {
+                            //     element.textContent = '';
+                            // }
                         }}
                         onKeyDown={handleKeyDown}
                         onPaste={handlePaste}
                         suppressContentEditableWarning={true}
-                    // data-placeholder={input ? '' : 'Type your message here...'}
                     />
                 </div>
 
@@ -130,7 +143,7 @@ function InputArea({ input,
                             <button
                                 className="send-btn"
                                 onClick={() => handleSend(textareaRef)}
-                                disabled={loading || (input.trim() === '' && attachedFiles.length === 0)}
+                                disabled={loading || (input.trim() === '' && attachedFiles.length === 0) || fileLoading}
                             >
                                 <svg width="24" height="24" viewBox="0 0 20 20" fill="currentColor" xmlns="http://www.w3.org/2000/svg"
                                     className="icon"><path d="M8.99992 16V6.41407L5.70696 9.70704C5.31643 10.0976 4.68342 10.0976 4.29289 9.70704C3.90237 9.31652 3.90237 8.6835 4.29289 8.29298L9.29289 3.29298L9.36907 3.22462C9.76184 2.90427 10.3408 2.92686 10.707 3.29298L15.707 8.29298L15.7753 8.36915C16.0957 8.76192 16.0731 9.34092 15.707 9.70704C15.3408 10.0732 14.7618 10.0958 14.3691 9.7754L14.2929 9.70704L10.9999 6.41407V16C10.9999 16.5523 10.5522 17 9.99992 17C9.44764 17 8.99992 16.5523 8.99992 16Z"></path></svg>

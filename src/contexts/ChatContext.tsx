@@ -5,6 +5,11 @@ type FirstChatData = {
     files?: any[];
 } | null;
 
+type OngoingChat = {
+    chatId: string;
+    aiMessageId: number;
+};
+
 type ChatContextType = {
     chats: any[];
     loading: boolean;
@@ -17,6 +22,9 @@ type ChatContextType = {
     firstchat: FirstChatData;
     setFirstChat: React.Dispatch<React.SetStateAction<FirstChatData>>;
     updateChatTimestamp: (chatId: string) => void;
+    pushOngoingChat: (chatId: string, aiMessageId:number) => void;
+    popOngoingChat: (chatId: string, aiMessageId:number) => void;
+    onGoingChat: OngoingChat[];
 }
 
 const chatContext = createContext<ChatContextType | undefined>(undefined)
@@ -28,6 +36,7 @@ function ChatContext({ children }: { children: React.ReactNode }) {
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<boolean>(false);
     const [firstchat, setFirstChat] = useState<FirstChatData>(null);
+    const [onGoingChat, setOnGoingChat] = useState<OngoingChat[]>([]);
 
     const refreshChats = async () => {
         try {
@@ -106,6 +115,18 @@ function ChatContext({ children }: { children: React.ReactNode }) {
         });
     };
 
+    const pushOngoingChat = (chatId: string, aiMessageId: number) => {
+        if(chatId !=""){
+            setOnGoingChat(prev => [...prev, { chatId, aiMessageId }]);
+        }
+    };
+
+    const popOngoingChat = (chatId: string, aiMessageId: number) => {
+        if(chatId !=""){
+            setOnGoingChat(prev => prev.filter(chat => chat.chatId !== chatId || chat.aiMessageId !== aiMessageId));
+        }
+    };
+
     useEffect(() => {
         refreshChats();
     }, []);
@@ -113,7 +134,7 @@ function ChatContext({ children }: { children: React.ReactNode }) {
 
 
     return (
-        <chatContext.Provider value={{ chats, loading, error, setChats, setLoading, setError, refreshChats, deleteChat, firstchat, setFirstChat, updateChatTimestamp }}>
+        <chatContext.Provider value={{ chats, loading, error, setChats, setLoading, setError, refreshChats, deleteChat, firstchat, onGoingChat, setFirstChat, updateChatTimestamp, pushOngoingChat, popOngoingChat }}>
             {children}
         </chatContext.Provider>
     )

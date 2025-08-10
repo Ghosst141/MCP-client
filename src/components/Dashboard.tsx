@@ -13,7 +13,7 @@ import { SideContext } from '../contexts/SidebarContext';
 export default function Dashboard() {
 
     const { input, setInput, messages, loading, mcpOption, setMcpOption, handlePaste,
-        attachedFiles, removeAttachedFile, handleFileUpload ,setLoading} = useChat();
+        attachedFiles, removeAttachedFile, handleFileUpload ,setLoading, fileLoading} = useChat();
     const [open, setOpen] = useState<boolean>(false);
     const textareaRef = useRef<HTMLDivElement | null>(null);
 
@@ -131,6 +131,7 @@ export default function Dashboard() {
                             attachedFiles={attachedFiles}
                             removeAttachedFile={removeAttachedFile}
                             handleFileChange={handleFileChange}
+                            fileLoading={fileLoading}
                         />
                     </div>
                 </div>

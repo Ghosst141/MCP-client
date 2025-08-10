@@ -3,19 +3,33 @@ import type { FileAttachment } from '../types';
 import FilePreviewModal from '../components/FilePreviewModal';
 import './FilesDisplay.css';
 
-function FilesDisplayChat({ attachedFiles, removeAttachedFile, formatFileSize }: {
+function FilesDisplayChat({ attachedFiles, removeAttachedFile, formatFileSize, fileLoading }: {
     attachedFiles: FileAttachment[];
     removeAttachedFile: (index: number) => void;
     formatFileSize: (bytes: number) => string;
+    fileLoading?: boolean;
 }) {
     const [previewFile, setPreviewFile] = useState<FileAttachment | null>(null);
     return (
         <>
-            {attachedFiles.length > 0 && (
+            {(attachedFiles.length > 0 || fileLoading) && (
                 <div className="attached-files">
                     <div className="attached-files-header">
-                        <span>{attachedFiles.length} file{attachedFiles.length > 1 ? 's' : ''} attached</span>
+                        {fileLoading ? (
+                            <span>Processing files...</span>
+                        ) : (
+                            <span>{attachedFiles.length} file{attachedFiles.length > 1 ? 's' : ''} attached</span>
+                        )}
                     </div>
+                    {fileLoading && (
+                        <div className="file-loading-indicator">
+                            <div className="loading-dots">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </div>
+                        </div>
+                    )}
                     <div className="attached-files-list">
                         {attachedFiles.map((file, index) => (
                             <div key={index} className="attached-file-item">
