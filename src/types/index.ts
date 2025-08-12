@@ -7,6 +7,7 @@ interface FileAttachment {
 }
 
 interface Message {
+  messageId: any;
   sender: 'user' | 'ai';
   text: string | string[];
   files?: FileAttachment[];

@@ -46,7 +46,7 @@ export function useChat(chatId?: string) {
 
         // Set loading state first
         let aiMessageId: number | null = null; // Declare outside try-catch to access in error handling
-
+        let messageId: any = null;
         try {
             // 1. Save user message to database FIRST
             const isUserMessageSaved = await saveUserMessage(
@@ -56,14 +56,17 @@ export function useChat(chatId?: string) {
                 currentFiles,
                 updateChatTimestamp as (chatId: string) => void
             );
+            console.log(isUserMessageSaved);
 
             if (!isUserMessageSaved) {
                 setLoading(false); // Reset loading state
                 return;
             }
+            messageId = isUserMessageSaved;
 
             // 2. Only clear UI state AFTER successful save
             const userMessage: Message = {
+                messageId: messageId, // Use the messageId returned from saveUserMessage
                 sender: 'user',
                 text: currentInput,
                 files: currentFiles.length > 0 ? currentFiles : undefined,
@@ -98,7 +101,11 @@ export function useChat(chatId?: string) {
             // Call Gemini API with streaming
             const result = await geminiModel.generateContentStream(prompt);
             let fullResponse = '';
+            aiMessageId = Date.now() + Math.random(); // Prevent collisions
 
+            if (pushOngoingChat) {
+                pushOngoingChat(chatId || "", aiMessageId, messageId);
+            }
             // Process the streaming response
             for await (const chunk of result.stream) {
                 const chunkText = chunk.text();
@@ -106,16 +113,14 @@ export function useChat(chatId?: string) {
 
                 // Create AI message on first chunk
                 if (aiMessageId === null) {
-                    aiMessageId = Date.now() + Math.random(); // Prevent collisions
                     const aiResponse: Message = {
+                        messageId: messageId,
                         sender: 'ai',
                         text: fullResponse,
                         timestamp: aiMessageId
                     };
                     setMessages(prev => [...prev, aiResponse]);
-                    if (pushOngoingChat) {
-                        pushOngoingChat(chatId || "", aiMessageId);
-                    }
+
                     // Only show streaming indicator if we're still in the same chat
                     if (chatId === sendingToChatId) {
                         setStreamingMessageId(aiMessageId);
@@ -124,7 +129,7 @@ export function useChat(chatId?: string) {
                     // Update the AI message in real-time
                     setMessages(prev =>
                         prev.map(msg =>
-                            msg.timestamp === aiMessageId
+                            (msg.timestamp === aiMessageId && msg.messageId === messageId)
                                 ? { ...msg, text: fullResponse }
                                 : msg
                         )
@@ -135,6 +140,7 @@ export function useChat(chatId?: string) {
             // Clear streaming state only if we're still in the same chat
             if (aiMessageId !== null && chatId === sendingToChatId) {
                 setStreamingMessageId(null);
+                setLoading(false); // Clear loading immediately after streaming ends
             }
 
             // 4. Save AI response to database
@@ -142,9 +148,10 @@ export function useChat(chatId?: string) {
                 const isModelMessageSaved = await saveModelMessage(
                     sendingToChatId,
                     "user123",
-                    fullResponse
+                    fullResponse,
+                    messageId
                 );
-                
+
                 // Always clean up ongoing chat using the original sending chat ID
                 if (popOngoingChat) {
                     popOngoingChat(sendingToChatId, aiMessageId); // Use sendingToChatId for consistency
@@ -169,6 +176,7 @@ export function useChat(chatId?: string) {
                 // Add error message
                 const errorMessageId = Date.now() + Math.random();
                 const errorResponse: Message = {
+                    messageId: messageId,
                     sender: 'ai',
                     text: errorText,
                     timestamp: errorMessageId
@@ -180,13 +188,14 @@ export function useChat(chatId?: string) {
                     await saveModelMessage(
                         sendingToChatId,
                         "user123",
-                        errorText
+                        errorText,
+                        messageId
                     );
                 } catch (dbError) {
                     console.error('Failed to save error response to database:', dbError);
                 }
             }
-            
+
             // Clean up ongoing chat even if we switched tabs - use the AI message ID from this request
             if (popOngoingChat && aiMessageId !== null) {
                 popOngoingChat(sendingToChatId, aiMessageId);
@@ -195,8 +204,8 @@ export function useChat(chatId?: string) {
             // Always reset loading state
             if (chatId === sendingToChatId) {
                 setLoading(false);
+                setStreamingMessageId(null);
             }
-
         }
     };
 

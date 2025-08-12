@@ -312,7 +312,7 @@ body {
   .app-container {
     position: relative;
   }
-  
+
   .sidebar {
     position: fixed;
     top: 0;
@@ -325,23 +325,23 @@ body {
     padding: initial;
     overflow-y: scroll;
   }
-  
+
   .sidebar:not(.closed) {
     transform: translateX(0);
   }
-  
+
   .sidebar.closed {
     transform: translateX(-100%);
     width: 260px;
     padding: initial;
     overflow: initial;
   }
-  
+
   /* Disable transitions during resize to prevent flickering */
   .sidebar.no-transition {
     transition: none !important;
   }
-  
+
   /* Sidebar overlay backdrop */
   .sidebar-overlay {
     position: fixed;
@@ -355,7 +355,7 @@ body {
     visibility: hidden;
     transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
   }
-  
+
   .sidebar-overlay.active {
     opacity: 1;
     visibility: visible;
@@ -367,13 +367,24 @@ body {
   .sidebar {
     position: static;
     transform: none;
-    transition: width 0.1s ease-in-out, padding 0.1s ease-in-out;
+    /* transition: width 0.1s ease-in-out, padding 0.1s ease-in-out; */
   }
-  
+
   .sidebar.closed {
     width: 0;
     padding: 0;
     overflow: hidden;
     transform: none;
   }
+
+  
+}
+
+@media (min-width: 790px) {
+
+  .sidebar {
+    transition: width 0.1s ease-in-out, padding 0.1s ease-in-out,
+      background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease !important;
+  }
+
 }

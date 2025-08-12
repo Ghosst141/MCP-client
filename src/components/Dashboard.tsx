@@ -42,7 +42,10 @@ export default function Dashboard() {
     const sidebarContext = useContext(SideContext);
     if (!sidebarContext) throw new Error("SidebarContext is undefined");
     const { setSelectedChatId } = sidebarContext;
-
+    
+    useEffect(()=>{
+        setSelectedChatId(null); // Reset selected chat ID on mount
+    },[])
 
     const handleSend = async () => {
         if (input.trim() === '' && attachedFiles.length === 0) return;
@@ -60,20 +63,25 @@ export default function Dashboard() {
                     files: attachedFiles.length > 0 ? attachedFiles : undefined
                 })
             });
-            
+            console.log("pure res",res);
             if (!res.ok) {
                 const errorText = await res.text();
                 throw new Error(errorText || "Failed to create chat");
             }
             
-            const chatId = await res.json();
+            const chatResponse = await res.json();
+            console.log("reponse of user",chatResponse);
             
+            const chatId = chatResponse._id;
+            const messageId = chatResponse.messageId; // Get messageId from the first message in history
+
             // Set the newly created chat as selected
             
             // Don't refresh chats immediately - let it refresh when the message is processed
             setFirstChat({
                 text: input.trim(),
-                files: attachedFiles.length > 0 ? attachedFiles : undefined
+                files: attachedFiles.length > 0 ? attachedFiles : undefined,
+                messageId: messageId
             });
             Navigate(`/chat/${chatId}`);
             setSelectedChatId(chatId);

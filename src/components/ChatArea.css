@@ -630,3 +630,10 @@
   
 }
 
+@media (min-width: 790px) {
+  .messages-container {
+    padding-inline: 2rem;
+  }
+  
+}
+

@@ -3,11 +3,13 @@ import React, { createContext, useEffect, useState } from 'react'
 type FirstChatData = {
     text: string;
     files?: any[];
+    messageId?: any;
 } | null;
 
 type OngoingChat = {
     chatId: string;
     aiMessageId: number;
+    messageId: any;
 };
 
 type ChatContextType = {
@@ -22,7 +24,7 @@ type ChatContextType = {
     firstchat: FirstChatData;
     setFirstChat: React.Dispatch<React.SetStateAction<FirstChatData>>;
     updateChatTimestamp: (chatId: string) => void;
-    pushOngoingChat: (chatId: string, aiMessageId:number) => void;
+    pushOngoingChat: (chatId: string, aiMessageId:number,messageId: any) => void;
     popOngoingChat: (chatId: string, aiMessageId:number) => void;
     onGoingChat: OngoingChat[];
 }
@@ -115,9 +117,9 @@ function ChatContext({ children }: { children: React.ReactNode }) {
         });
     };
 
-    const pushOngoingChat = (chatId: string, aiMessageId: number) => {
+    const pushOngoingChat = (chatId: string, aiMessageId: number,messageId: any) => {
         if(chatId !=""){
-            setOnGoingChat(prev => [...prev, { chatId, aiMessageId }]);
+            setOnGoingChat(prev => [...prev, { chatId, aiMessageId,messageId }]);
         }
     };
 

@@ -29,10 +29,30 @@ export default function ChatArea() {
   const options: string[] = ['Job Portal', 'Normal'];
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const dropdownRef = useClickOutside(() => setOpen(false));
+  const hasScrolledOnLoad = useRef<boolean>(false);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, loading]);
+    // Only scroll if this chat is actively streaming or loading
+    const isThisChatStreaming = streamingMessageId !== null;
+    const isThisChatLoading = loading;
+    
+    if (isThisChatStreaming || isThisChatLoading) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, loading, streamingMessageId]);
+
+  // Separate effect for initial scroll when messages are first loaded
+  useEffect(() => {
+    if (messages.length > 0 && !messagesLoading && !hasScrolledOnLoad.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      hasScrolledOnLoad.current = true;
+    }
+  }, [messages.length, messagesLoading]);
+
+  // Reset scroll flag when chat changes
+  useEffect(() => {
+    hasScrolledOnLoad.current = false;
+  }, [chatId]);
 
   useEffect(() => {
     const textarea = textareaRef.current;
@@ -61,9 +81,7 @@ export default function ChatArea() {
   const popOngoingChat = contextChat?.popOngoingChat;
   const onGoingChat = contextChat?.onGoingChat;
 
-  console.log(chatId);
-  console.log('onGoingChat:', onGoingChat);
-  console.log('messages length:', messages.length);
+  // console.log('onGoingChat:', onGoingChat);
 
 
   useEffect(() => {
@@ -74,15 +92,16 @@ export default function ChatArea() {
 
     const ongoing = onGoingChat?.find(chat => chat.chatId === chatId);
     if (ongoing) {
-      console.log(`Found ongoing chat ${chatId} with aiMessageId ${ongoing.aiMessageId}`);
+      // console.log(`Found ongoing chat ${chatId} with aiMessageId ${ongoing.aiMessageId}`);
       setLoading(true);
       setStreamingMessageId(ongoing.aiMessageId);
 
-      const hasAiMessage = messages.some(msg => msg.timestamp === ongoing.aiMessageId);
+      const hasAiMessage = messages.some(msg => (msg.timestamp === ongoing.aiMessageId && msg.messageId === ongoing.messageId));
       if (!hasAiMessage && messages.length > 0) {
-        console.log(`AI message with timestamp ${ongoing.aiMessageId} not found, creating placeholder`);
+        // console.log(`AI message with timestamp ${ongoing.aiMessageId} not found, creating placeholder`);
 
         const aiResponse: Message = {
+          messageId: ongoing.messageId, // Use the SAME messageId as ongoing stream
           sender: 'ai',
           text: '', // Start with empty text, will be filled by ongoing stream
           timestamp: ongoing.aiMessageId // Use the SAME timestamp as ongoing stream
@@ -120,6 +139,7 @@ export default function ChatArea() {
             : undefined;
 
           return {
+            messageId: item.messageId,
             sender: item.role === 'user' ? 'user' : 'ai',
             text: item.parts.length > 1 ? item.parts.map((p: any) => p.text) : item.parts[0]?.text || '',
             files,
@@ -136,7 +156,7 @@ export default function ChatArea() {
 
           // Create a placeholder AI message for streaming
           let aiMessageId: number | null = null; // Declare outside try-catch to access in error handling
-
+          const messageId = firstChatData?.messageId;
           // Add chat to ongoing chats
           setLoading(true);
 
@@ -160,17 +180,18 @@ export default function ChatArea() {
               if (aiMessageId === null) {
                 aiMessageId = Date.now() + 1; // Ensure unique timestamp
                 const aiResponse: Message = {
+                  messageId: messageId, // Use the same messageId as user message
                   sender: 'ai',
                   text: '',
                   timestamp: aiMessageId
                 };
                 setMessages(prev => [...prev, aiResponse]);
-                pushOngoingChat(chatId as any, aiMessageId);
+                pushOngoingChat(chatId as any, aiMessageId, messageId); // Add to ongoing chats
               }
               else{
                 setMessages(prev =>
                   prev.map(msg =>
-                    msg.timestamp === aiMessageId
+                    (msg.timestamp === aiMessageId && msg.messageId === messageId)
                       ? { ...msg, text: fullResponse }
                       : msg
                   )
@@ -179,7 +200,7 @@ export default function ChatArea() {
             }
 
             if (chatId && fullResponse && aiMessageId !== null) {
-              await saveAiMessage(chatId, "user123", fullResponse, updateChatTimestamp, refreshChats);
+              await saveAiMessage(chatId, "user123", fullResponse, updateChatTimestamp, refreshChats,messageId);
               popOngoingChat(chatId || "", aiMessageId); // Remove chat from ongoing chats
             }
 
@@ -194,7 +215,7 @@ export default function ChatArea() {
             // Update the AI message with error
             setMessages(prev =>
               prev.map(msg =>
-                msg.timestamp === aiMessageId
+                (msg.timestamp === aiMessageId && msg.messageId === messageId)
                   ? { ...msg, text: errorText }
                   : msg
               )
@@ -202,7 +223,7 @@ export default function ChatArea() {
 
             // Save error response to database
             if (chatId) {
-              await saveAiMessage(chatId, "user123", errorText, updateChatTimestamp, refreshChats);
+              await saveAiMessage(chatId, "user123", errorText, updateChatTimestamp, refreshChats,messageId);
             }
 
             // Clear firstchat data even on error

@@ -7,7 +7,8 @@ const saveAiMessage = async (
   userID: string,
   fullResponse: string,
   updateChatTimestamp: (chatId: string) => void,
-  refreshChats: () => void
+  refreshChats: () => void,
+  messageId?: string
 ) => {
   try {
     await fetch(`http://localhost:3000/api/chats/${chatId}`, {
@@ -18,6 +19,7 @@ const saveAiMessage = async (
       body: JSON.stringify({
         userId: userID,
         answer: fullResponse,
+        messageId: messageId
       }),
     });
     updateChatTimestamp(chatId);
@@ -50,12 +52,13 @@ const saveUserMessage = async (
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
+    const data = await response.json();
 
     updateChatTimestamp(chatId);
-    return true;
+    return data;
   } catch (error) {
     console.error('Error saving user message:', error);
-    return false;
+    return null;
   }
 };
 
@@ -63,7 +66,8 @@ const saveModelMessage = async(
   chatId: string,
   userID: string,
   answer: string,
-)=>{
+  messageId: any
+) => {
   try {
     const response = await fetch(`http://localhost:3000/api/chats/${chatId}/ai`, {
       method: 'PUT',
@@ -73,6 +77,7 @@ const saveModelMessage = async(
       body: JSON.stringify({
         userId: userID,
         answer,
+        messageId
       }),
     });
 
