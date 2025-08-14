@@ -5,6 +5,7 @@ import useChatModel from "./useChatModel";
 import { saveModelMessage, saveUserMessage } from "../helpers/chatArea";
 // import { useParams } from "react-router-dom";
 import { useRef } from "react";
+import { errorResolveForPrompt, userPromptGeneration } from "../helpers/prompGenerate";
 
 export function useChat(chatId?: string) {
     // Ref to track the active chatId for async update protection
@@ -26,7 +27,7 @@ export function useChat(chatId?: string) {
     const popOngoingChat = context?.popOngoingChat;
 
     // Cleanup when chat changes
- 
+
     useEffect(() => {
         if (currentChatId !== chatId) {
             // Clear streaming state when switching chats
@@ -37,7 +38,7 @@ export function useChat(chatId?: string) {
             activeChatIdRef.current = chatId; // Update ref on chat change
         }
     }, [chatId, currentChatId]);
-    
+
 
     const handleSend = async (textareaRef: React.RefObject<HTMLDivElement | null>): Promise<void> => {
         if (!input.trim() && attachedFiles.length === 0) return;
@@ -91,29 +92,21 @@ export function useChat(chatId?: string) {
                 textareaRef.current.innerText = '';
             }
 
-            // 3. Generate AI response
-            // aiMessageId is already declared above
-
-            // Check if Gemini model is loaded
             if (!geminiModel) {
                 throw new Error('Gemini model not loaded yet');
             }
 
-            // Prepare the prompt
             let prompt = currentInput;
             if (currentFiles.length > 0) {
                 const fileInfo = currentFiles.map(file => `File: ${file.name} (${file.type})`).join(', ');
                 prompt = prompt ? `${prompt}\n\nAttached files: ${fileInfo}` : `Analyze these files: ${fileInfo}`;
             }
 
-            // Call Gemini API with streaming
-            const result = await geminiModel.generateContentStream(prompt);
-
             aiMessageId = Date.now() + Math.random(); // Prevent collisions
             if (pushOngoingChat) {
                 pushOngoingChat(chatId || "", aiMessageId, messageId);
             }
-            // Create AI message placeholder before streaming starts
+            
             const aiResponse: Message = {
                 messageId: messageId,
                 sender: 'ai',
@@ -125,35 +118,18 @@ export function useChat(chatId?: string) {
                 setStreamingMessageId(messageId);
             }
 
-
-            let fullResponse = '';
-
             setMessages(prev => [...prev, aiResponse]);
-            for await (const chunk of result.stream) {
-                // console.log("bla bla", chatId);
-                // console.log("sentid", sendingToChatId);
-                const chunkText = chunk.text();
-                fullResponse += chunkText;
-                // Update the AI message in real-time
-                if (activeChatIdRef.current === sendingToChatId) {
-                    setMessages(prev =>
-                        prev.map(msg =>
-                            (msg.timestamp === aiMessageId && msg.messageId === messageId)
-                                ? { ...msg, text: fullResponse }
-                                : msg
-                        )
-                    );
-                }
-            }
+
+            const fullResponse=await userPromptGeneration(prompt, messageId, aiMessageId, geminiModel, sendingToChatId, setMessages, activeChatIdRef)
 
 
             if (chatId === sendingToChatId) {
                 setStreamingMessageId(null);
-                setLoading(false); // Clear loading immediately after streaming ends
+                setLoading(false); 
             }
 
             if (popOngoingChat) {
-                popOngoingChat(sendingToChatId, aiMessageId); // Use sendingToChatId for consistency
+                popOngoingChat(sendingToChatId, aiMessageId);
             }
             // 4. Save AI response to database
             if (fullResponse && aiMessageId !== null) {
@@ -165,10 +141,6 @@ export function useChat(chatId?: string) {
                     messageId
                 );
 
-                // if (popOngoingChat) {
-                //     popOngoingChat(sendingToChatId, aiMessageId); // Use sendingToChatId for consistency
-                // }
-
                 if (!isModelMessageSaved) {
                     console.error('Failed to save AI response to database');
                 }
@@ -179,46 +151,30 @@ export function useChat(chatId?: string) {
             console.error('Error contacting backend:', error);
             const errorText = `Error: Failed to get response from Gemini. ${error instanceof Error ? error.message : 'Please try again.'}`;
 
-            // Only update state if we're still on the same chat
-            if (chatId === sendingToChatId) {
-                setStreamingMessageId(null);
-                const errorMessageId = Date.now() + Math.random();
-                const errorResponse: Message = {
-                    messageId: messageId,
-                    sender: 'ai',
-                    text: errorText,
-                    timestamp: errorMessageId
-                };
-                if (activeChatIdRef.current === chatId) {
-                    const isPresent = messages.findIndex((msg) => {
-                        return msg.messageId === messageId && msg.sender === 'ai';
-                    });
-                    if (isPresent === -1) {
-                        setMessages(prev => [...prev, errorResponse]);
-                    }
-                    else{
-                        setMessages(prev => {
-                            const newMessages = [...prev];
-                            newMessages[isPresent]["text"] = errorText;
-                            return newMessages;
-                        });
-                    }
-                }
-
-                // Save error response to database
-                try {
-                    await saveModelMessage(
-                        sendingToChatId,
-                        "user123",
-                        errorText,
-                        messageId
-                    );
-                } catch (dbError) {
-                    console.error('Failed to save error response to database:', dbError);
-                }
+            setStreamingMessageId(null);
+            const errorMessageId = Date.now() + Math.random();
+            const errorResponse: Message = {
+                messageId: messageId,
+                sender: 'ai',
+                text: errorText,
+                timestamp: errorMessageId
+            };
+            if (activeChatIdRef.current === chatId) {
+                errorResolveForPrompt(messageId, errorText, errorResponse, messages, setMessages);
             }
 
-            // Clean up ongoing chat even if we switched tabs - use the AI message ID from this request
+            // Save error response to database
+            try {
+                await saveModelMessage(
+                    sendingToChatId,
+                    "user123",
+                    errorText,
+                    messageId
+                );
+            } catch (dbError) {
+                console.error('Failed to save error response to database:', dbError);
+            }
+
             if (popOngoingChat && aiMessageId !== null) {
                 popOngoingChat(sendingToChatId, aiMessageId);
             }

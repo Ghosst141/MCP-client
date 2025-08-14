@@ -102,12 +102,12 @@ function MessageList({
                     </div>
                 )}
                 <div ref={messagesEndRef} />
-                {/* <div style={{ position: 'fixed', top: '10px', right: '10px', background: 'rgba(0,0,0,0.8)', color: 'white', padding: '10px', fontSize: '12px', zIndex: 9999 }}>
+                <div style={{ position: 'fixed', top: '10px', right: '10px', background: 'rgba(0,0,0,0.8)', color: 'white', padding: '10px', fontSize: '12px', zIndex: 9999 }}>
                     <div>Loading: {loading ? 'true' : 'false'}</div>
                     <div>Streaming ID: {streamingMessageId}</div>
                     <div>Retry Index: {retryingMessageIndex}</div>
                     <div>Messages with empty AI text: {messages.filter(m => m.sender === 'ai' && (!m.text || m.text === '')).length}</div>
-                </div> */}
+                </div>
             </div>
         </>
     );

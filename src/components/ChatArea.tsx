@@ -12,6 +12,7 @@ import type { FileAttachment, Message } from '../types';
 import { chatContext } from '../contexts/ChatContext';
 import useChatModel from '../hooks/useChatModel';
 import { saveAiMessage, handleRetryMessage, isOrphanMessage } from '../helpers/chatArea';
+import { userPromptGeneration } from '../helpers/prompGenerate';
 // import { SideContext } from '../contexts/SidebarContext';
 
 
@@ -204,7 +205,7 @@ export default function ChatArea() {
         setMessagesLoading(false);
         if ((text || (firstChatFiles && firstChatFiles.length > 0)) && !initialMessageProcessed && geminiModel) {
           setInitialMessageProcessed(true);
-          let aiMessageId: number | null = null;
+          const aiMessageId = Date.now() + 1;;
           const messageId = firstChatData?.messageId;
           setLoading(true);
           try {
@@ -213,35 +214,21 @@ export default function ChatArea() {
               const fileInfo = firstChatFiles.map(file => `File: ${file.name} (${file.type})`).join(', ');
               prompt = prompt ? `${prompt}\n\nAttached files: ${fileInfo}` : `Analyze these files: ${fileInfo}`;
             }
-            const result = await geminiModel.generateContentStream(prompt);
-            let fullResponse = '';
-            for await (const chunk of result.stream) {
-              const chunkText = chunk.text();
-              fullResponse += chunkText;
-              if (aiMessageId === null) {
-                aiMessageId = Date.now() + 1;
-                const aiResponse: Message = {
-                  messageId: messageId,
-                  sender: 'ai',
-                  text: '',
-                  timestamp: aiMessageId
-                };
-                setMessages(prev => [...prev, aiResponse]);
-                pushOngoingChat(chatId as any, aiMessageId, messageId);
-              }
-              else {
-                setMessages(prev =>
-                  prev.map(msg =>
-                    (msg.timestamp === aiMessageId && msg.messageId === messageId)
-                      ? { ...msg, text: fullResponse }
-                      : msg
-                  )
-                );
-              }
-            }
+            const aiResponse: Message = {
+              messageId: messageId,
+              sender: 'ai',
+              text: '',
+              timestamp: aiMessageId
+            };
+            pushOngoingChat(chatId as any, aiMessageId, messageId);
+            setMessages(prev => [...prev, aiResponse]);
+
+            const fullResponse = await userPromptGeneration(prompt, messageId, aiMessageId, geminiModel, chatId as any, setMessages, activeChatIdRef);
+            
+            popOngoingChat(chatId || "", aiMessageId);
+
             if (chatId && fullResponse && aiMessageId !== null) {
               await saveAiMessage(chatId, "user123", fullResponse, updateChatTimestamp, refreshChats, messageId);
-              popOngoingChat(chatId || "", aiMessageId);
             }
             setFirstChat(null);
           } catch (error) {
@@ -253,11 +240,14 @@ export default function ChatArea() {
                   : msg
               )
             );
+            popOngoingChat(chatId || "", aiMessageId);
             if (chatId) {
               await saveAiMessage(chatId, "user123", errorText, updateChatTimestamp, refreshChats, messageId);
             }
             setFirstChat(null);
           } finally {
+            popOngoingChat(chatId || "", aiMessageId);
+            setFirstChat(null)
             setLoading(false);
           }
         }

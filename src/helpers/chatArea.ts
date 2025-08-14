@@ -1,4 +1,5 @@
 import type { FileAttachment, Message } from "../types";
+import { errorResolveForPromptWithRetry, userPromptGeneration } from "./prompGenerate";
 
 const saveAiMessage = async (
   chatId: string,
@@ -154,23 +155,8 @@ const handleRetryMessage = async (
     setStreamingMessageId(messageId);
 
     // Call Gemini API with streaming
-    const result = await geminiModel.generateContentStream(prompt);
-    let fullResponse = '';
+    const fullResponse = await userPromptGeneration(prompt, messageId, aiMessageId, geminiModel, chatId, setMessages, activeChatIdRef);
 
-    // Process the streaming response
-    for await (const chunk of result.stream) {
-      const chunkText = chunk.text();
-      fullResponse += chunkText;
-      if (activeChatIdRef.current === chatId) {
-        setMessages(prev =>
-          prev.map(msg =>
-            (msg.timestamp === aiMessageId && msg.messageId === messageId)
-              ? { ...msg, text: fullResponse }
-              : msg
-          )
-        );
-      }
-    }
     popOngoingChat(chatId, aiMessageId);
     setLoading(false)
 
@@ -190,27 +176,7 @@ const handleRetryMessage = async (
 
     // Check if an AI message already exists after the user message
     if (activeChatIdRef.current === chatId) {
-      setMessages(prev => {
-        const newMessages = [...prev];
-        const nextMsg = newMessages[msgIndex + 1];
-        if (nextMsg && nextMsg.sender === 'ai' && nextMsg.messageId === userMessage.messageId) {
-          // Update the existing AI message's text
-          newMessages[msgIndex + 1] = {
-            ...nextMsg,
-            text: errorText
-          };
-        } else {
-          // Insert a new error AI message
-          const aiResponse: Message = {
-            messageId: userMessage.messageId,
-            sender: 'ai',
-            text: errorText,
-            timestamp: aiMessageId
-          };
-          newMessages.splice(msgIndex + 1, 0, aiResponse);
-        }
-        return newMessages;
-      });
+      errorResolveForPromptWithRetry(msgIndex, userMessage, errorText, aiMessageId, setMessages);
     }
     console.log("idhar pahuch nii paya kya popOngoing m catch ke");
     
