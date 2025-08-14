@@ -26,6 +26,7 @@ const formatFileSize = (bytes: number): string => {
 function InputArea({ input,
     setInput,
     textareaRef,
+    scrollRef,
     handleKeyDown,
     handlePaste,
     loading,
@@ -40,6 +41,7 @@ function InputArea({ input,
     handleFileChange,
     attachedFiles,
     removeAttachedFile }: {
+        scrollRef: React.RefObject<boolean>;
         input: string;
         setInput: React.Dispatch<React.SetStateAction<string>>;
         textareaRef: React.RefObject<HTMLDivElement | null>;
@@ -142,7 +144,7 @@ function InputArea({ input,
                         <div className="chat-send-icon">
                             <button
                                 className="send-btn"
-                                onClick={() => handleSend(textareaRef)}
+                                onClick={() => {scrollRef.current = false; handleSend(textareaRef);}}
                                 disabled={loading || (input.trim() === '' && attachedFiles.length === 0) || fileLoading}
                             >
                                 <svg width="24" height="24" viewBox="0 0 20 20" fill="currentColor" xmlns="http://www.w3.org/2000/svg"

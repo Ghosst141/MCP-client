@@ -3,8 +3,12 @@ import type { Message, FileAttachment } from "../types/index";
 import { chatContext } from "../contexts/ChatContext";
 import useChatModel from "./useChatModel";
 import { saveModelMessage, saveUserMessage } from "../helpers/chatArea";
+// import { useParams } from "react-router-dom";
+import { useRef } from "react";
 
 export function useChat(chatId?: string) {
+    // Ref to track the active chatId for async update protection
+    const activeChatIdRef = useRef(chatId);
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
@@ -14,6 +18,7 @@ export function useChat(chatId?: string) {
     const [mcpOption, setMcpOption] = useState('select');
     const [attachedFiles, setAttachedFiles] = useState<FileAttachment[]>([]);
 
+
     const context = useContext(chatContext);
     const updateChatTimestamp = context?.updateChatTimestamp;
     const geminiModel = useChatModel(); // Add Gemini model
@@ -21,6 +26,7 @@ export function useChat(chatId?: string) {
     const popOngoingChat = context?.popOngoingChat;
 
     // Cleanup when chat changes
+ 
     useEffect(() => {
         if (currentChatId !== chatId) {
             // Clear streaming state when switching chats
@@ -28,8 +34,10 @@ export function useChat(chatId?: string) {
             setLoading(false);
             setFileLoading(false);
             setCurrentChatId(chatId);
+            activeChatIdRef.current = chatId; // Update ref on chat change
         }
     }, [chatId, currentChatId]);
+    
 
     const handleSend = async (textareaRef: React.RefObject<HTMLDivElement | null>): Promise<void> => {
         if (!input.trim() && attachedFiles.length === 0) return;
@@ -49,6 +57,7 @@ export function useChat(chatId?: string) {
         let messageId: any = null;
         try {
             // 1. Save user message to database FIRST
+            setLoading(true);
             const isUserMessageSaved = await saveUserMessage(
                 sendingToChatId,
                 "user123",
@@ -73,7 +82,6 @@ export function useChat(chatId?: string) {
                 timestamp: Date.now()
             };
             setMessages(prev => [...prev, userMessage]);
-            setLoading(true);
 
             setInput('');
             setAttachedFiles([]);
@@ -100,33 +108,34 @@ export function useChat(chatId?: string) {
 
             // Call Gemini API with streaming
             const result = await geminiModel.generateContentStream(prompt);
-            let fullResponse = '';
-            aiMessageId = Date.now() + Math.random(); // Prevent collisions
 
+            aiMessageId = Date.now() + Math.random(); // Prevent collisions
             if (pushOngoingChat) {
                 pushOngoingChat(chatId || "", aiMessageId, messageId);
             }
-            // Process the streaming response
+            // Create AI message placeholder before streaming starts
+            const aiResponse: Message = {
+                messageId: messageId,
+                sender: 'ai',
+                text: '',
+                timestamp: aiMessageId
+            };
+
+            if (chatId === sendingToChatId) {
+                setStreamingMessageId(messageId);
+            }
+
+
+            let fullResponse = '';
+
+            setMessages(prev => [...prev, aiResponse]);
             for await (const chunk of result.stream) {
+                // console.log("bla bla", chatId);
+                // console.log("sentid", sendingToChatId);
                 const chunkText = chunk.text();
                 fullResponse += chunkText;
-
-                // Create AI message on first chunk
-                if (aiMessageId === null) {
-                    const aiResponse: Message = {
-                        messageId: messageId,
-                        sender: 'ai',
-                        text: fullResponse,
-                        timestamp: aiMessageId
-                    };
-                    setMessages(prev => [...prev, aiResponse]);
-
-                    // Only show streaming indicator if we're still in the same chat
-                    if (chatId === sendingToChatId) {
-                        setStreamingMessageId(aiMessageId);
-                    }
-                } else {
-                    // Update the AI message in real-time
+                // Update the AI message in real-time
+                if (activeChatIdRef.current === sendingToChatId) {
                     setMessages(prev =>
                         prev.map(msg =>
                             (msg.timestamp === aiMessageId && msg.messageId === messageId)
@@ -137,14 +146,18 @@ export function useChat(chatId?: string) {
                 }
             }
 
-            // Clear streaming state only if we're still in the same chat
-            if (aiMessageId !== null && chatId === sendingToChatId) {
+
+            if (chatId === sendingToChatId) {
                 setStreamingMessageId(null);
                 setLoading(false); // Clear loading immediately after streaming ends
             }
 
+            if (popOngoingChat) {
+                popOngoingChat(sendingToChatId, aiMessageId); // Use sendingToChatId for consistency
+            }
             // 4. Save AI response to database
             if (fullResponse && aiMessageId !== null) {
+                setLoading(false)
                 const isModelMessageSaved = await saveModelMessage(
                     sendingToChatId,
                     "user123",
@@ -152,14 +165,12 @@ export function useChat(chatId?: string) {
                     messageId
                 );
 
-                // Always clean up ongoing chat using the original sending chat ID
-                if (popOngoingChat) {
-                    popOngoingChat(sendingToChatId, aiMessageId); // Use sendingToChatId for consistency
-                }
+                // if (popOngoingChat) {
+                //     popOngoingChat(sendingToChatId, aiMessageId); // Use sendingToChatId for consistency
+                // }
 
                 if (!isModelMessageSaved) {
                     console.error('Failed to save AI response to database');
-                    // Don't return early - response is already shown to user
                 }
 
             }
@@ -170,10 +181,7 @@ export function useChat(chatId?: string) {
 
             // Only update state if we're still on the same chat
             if (chatId === sendingToChatId) {
-                // Clear streaming state
                 setStreamingMessageId(null);
-
-                // Add error message
                 const errorMessageId = Date.now() + Math.random();
                 const errorResponse: Message = {
                     messageId: messageId,
@@ -181,7 +189,21 @@ export function useChat(chatId?: string) {
                     text: errorText,
                     timestamp: errorMessageId
                 };
-                setMessages(prev => [...prev, errorResponse]);
+                if (activeChatIdRef.current === chatId) {
+                    const isPresent = messages.findIndex((msg) => {
+                        return msg.messageId === messageId && msg.sender === 'ai';
+                    });
+                    if (isPresent === -1) {
+                        setMessages(prev => [...prev, errorResponse]);
+                    }
+                    else{
+                        setMessages(prev => {
+                            const newMessages = [...prev];
+                            newMessages[isPresent]["text"] = errorText;
+                            return newMessages;
+                        });
+                    }
+                }
 
                 // Save error response to database
                 try {
@@ -201,6 +223,8 @@ export function useChat(chatId?: string) {
                 popOngoingChat(sendingToChatId, aiMessageId);
             }
         } finally {
+            console.log("response completed");
+
             // Always reset loading state
             if (chatId === sendingToChatId) {
                 setLoading(false);
@@ -295,6 +319,7 @@ export function useChat(chatId?: string) {
             console.error('Error during file upload:', error);
             alert('An error occurred while uploading files. Please try again.');
         } finally {
+
             setFileLoading(false);
         }
     };

@@ -1,6 +1,4 @@
-// import type { FileAttachment, Message } from "../types";
-
-import type { FileAttachment } from "../types";
+import type { FileAttachment, Message } from "../types";
 
 const saveAiMessage = async (
   chatId: string,
@@ -62,7 +60,7 @@ const saveUserMessage = async (
   }
 };
 
-const saveModelMessage = async(
+const saveModelMessage = async (
   chatId: string,
   userID: string,
   answer: string,
@@ -92,4 +90,146 @@ const saveModelMessage = async(
   }
 }
 
-export { saveAiMessage, saveUserMessage, saveModelMessage };
+// Function to detect orphan messages (user messages without AI responses)
+const isOrphanMessage = (messages: Message[], msgIndex: number): boolean => {
+  const currentMsg = messages[msgIndex];
+  if (currentMsg.sender !== 'user') return false;
+  
+  // Check if the next message is an AI response
+  const nextMsg = messages[msgIndex + 1];
+  return !nextMsg || nextMsg.sender !== 'ai';
+};
+
+// Retry function for orphan messages
+const handleRetryMessage = async (
+  msgIndex: number,
+  messages: Message[],
+  geminiModel: any,
+  chatId: string,
+  setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
+  setStreamingMessageId: (id: number | null) => void,
+  pushOngoingChat: (chatId: string, aiMessageId: number, messageId: any,retry?: number) => void,
+  popOngoingChat: (chatId: string, aiMessageId: number) => void,
+  updateChatTimestamp: (chatId: string) => void,
+  refreshChats: () => void,
+  setRetryingMessageIndex: (index: number | null) => void,
+  activeChatIdRef: any,
+  setLoading: (loading: boolean) => void
+): Promise<void> => {
+  const userMessage = messages[msgIndex];
+  if (!userMessage || userMessage.sender !== 'user' || !geminiModel) return;
+  const aiMessageId = Date.now();
+
+  try {
+    // Set retry state to show inline typing indicator
+    setRetryingMessageIndex(msgIndex);
+    setLoading(true);
+    // Generate unique IDs for the retry response
+    const messageId = userMessage.messageId;
+
+    // Prepare the prompt from the user message
+    let prompt = userMessage.text as string || '';
+    if (userMessage.files && userMessage.files.length > 0) {
+      const fileInfo = userMessage.files.map(file => `File: ${file.name} (${file.type})`).join(', ');
+      prompt = prompt ? `${prompt}\n\nAttached files: ${fileInfo}` : `Analyze these files: ${fileInfo}`;
+    }
+
+    // Create placeholder AI message and insert it after the user message
+    const aiResponse: Message = {
+      messageId: messageId,
+      sender: 'ai',
+      text: '',
+      timestamp: aiMessageId
+    };
+
+    // Insert the AI response right after the user message
+    setMessages(prev => {
+      const newMessages = [...prev];
+      newMessages.splice(msgIndex + 1, 0, aiResponse);
+      return newMessages;
+    });
+
+    // Add to ongoing chats for streaming
+    pushOngoingChat(chatId, aiMessageId, messageId, msgIndex);
+    setStreamingMessageId(messageId);
+
+    // Call Gemini API with streaming
+    const result = await geminiModel.generateContentStream(prompt);
+    let fullResponse = '';
+
+    // Process the streaming response
+    for await (const chunk of result.stream) {
+      const chunkText = chunk.text();
+      fullResponse += chunkText;
+      if (activeChatIdRef.current === chatId) {
+        setMessages(prev =>
+          prev.map(msg =>
+            (msg.timestamp === aiMessageId && msg.messageId === messageId)
+              ? { ...msg, text: fullResponse }
+              : msg
+          )
+        );
+      }
+    }
+    popOngoingChat(chatId, aiMessageId);
+    setLoading(false)
+
+
+    // Save the AI response to database
+    if (chatId && fullResponse) {
+      await saveAiMessage(chatId, "user123", fullResponse, updateChatTimestamp, refreshChats, messageId);
+    }
+
+    // Clean up
+    setStreamingMessageId(null);
+
+  } catch (error) {
+    console.error('Error during retry:', error);
+
+    const errorText = `Error: Failed to get response from Gemini. ${error instanceof Error ? error.message : 'Please try again.'}`;
+
+    // Check if an AI message already exists after the user message
+    if (activeChatIdRef.current === chatId) {
+      setMessages(prev => {
+        const newMessages = [...prev];
+        const nextMsg = newMessages[msgIndex + 1];
+        if (nextMsg && nextMsg.sender === 'ai' && nextMsg.messageId === userMessage.messageId) {
+          // Update the existing AI message's text
+          newMessages[msgIndex + 1] = {
+            ...nextMsg,
+            text: errorText
+          };
+        } else {
+          // Insert a new error AI message
+          const aiResponse: Message = {
+            messageId: userMessage.messageId,
+            sender: 'ai',
+            text: errorText,
+            timestamp: aiMessageId
+          };
+          newMessages.splice(msgIndex + 1, 0, aiResponse);
+        }
+        return newMessages;
+      });
+    }
+    console.log("idhar pahuch nii paya kya popOngoing m catch ke");
+    
+    popOngoingChat(chatId, aiMessageId);
+    setLoading(false)
+
+
+    // Save error response to database
+    if (chatId) {
+      await saveAiMessage(chatId, "user123", errorText, updateChatTimestamp, refreshChats, userMessage.messageId);
+    }
+  } finally {
+    // Clear retry state
+    setLoading(false)
+    setStreamingMessageId(null);
+    setRetryingMessageIndex(null);
+    console.log("and this call");
+    popOngoingChat(chatId, aiMessageId);
+  }
+};
+
+export { saveAiMessage, saveUserMessage, saveModelMessage, isOrphanMessage, handleRetryMessage };

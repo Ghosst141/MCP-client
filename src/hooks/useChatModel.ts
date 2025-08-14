@@ -7,7 +7,7 @@ const useChatModel = () => {
   useEffect(() => {
     const init = async () => {
       try {
-        const genAI = new GoogleGenerativeAI("AIzaSyCnYkxiH4f9po-G9EQ7F6DxZH2CjT_ADHE");
+        const genAI = new GoogleGenerativeAI("AIzaSyAHt89W2AzB0n0hHtNCaicULJcOaYw3QjU");
         const chatModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         setModel(chatModel);
       } catch (err) {

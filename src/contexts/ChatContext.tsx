@@ -10,6 +10,7 @@ type OngoingChat = {
     chatId: string;
     aiMessageId: number;
     messageId: any;
+    retry?: number;
 };
 
 type ChatContextType = {
@@ -24,7 +25,7 @@ type ChatContextType = {
     firstchat: FirstChatData;
     setFirstChat: React.Dispatch<React.SetStateAction<FirstChatData>>;
     updateChatTimestamp: (chatId: string) => void;
-    pushOngoingChat: (chatId: string, aiMessageId:number,messageId: any) => void;
+    pushOngoingChat: (chatId: string, aiMessageId:number,messageId: any,retry?: number) => void;
     popOngoingChat: (chatId: string, aiMessageId:number) => void;
     onGoingChat: OngoingChat[];
 }
@@ -117,9 +118,9 @@ function ChatContext({ children }: { children: React.ReactNode }) {
         });
     };
 
-    const pushOngoingChat = (chatId: string, aiMessageId: number,messageId: any) => {
+    const pushOngoingChat = (chatId: string, aiMessageId: number,messageId: any,retry?: number) => {
         if(chatId !=""){
-            setOnGoingChat(prev => [...prev, { chatId, aiMessageId,messageId }]);
+            setOnGoingChat(prev => [...prev, { chatId, aiMessageId,messageId,retry }]);
         }
     };
 

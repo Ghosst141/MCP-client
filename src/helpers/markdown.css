@@ -34,6 +34,12 @@
 .message.ai p {
   margin: 0.75em 0;
   line-height: 1.6;
+  max-width: 100%;
+  overflow-x: auto;
+  white-space: pre-wrap;   /* Wrap text if necessary */
+  word-wrap: break-word;   /* Break long words */
+  min-width: none;
+  overflow-wrap: anywhere;
 }
 
 .message.ai p:first-child {
@@ -53,6 +59,8 @@
 .message.ai li {
   margin: 0.25em 0;
   line-height: 1.5;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
 }
 
 .message.ai ul ul, .message.ai ol ol, .message.ai ul ol, .message.ai ol ul {
@@ -76,6 +84,13 @@
   font-size: 0.9em;
   line-height: 1.4;
   position: relative;
+  /* vsvds */
+  max-width: 100%;
+  overflow-x: auto;
+  white-space: pre-wrap;   /* Wrap text if necessary */
+  word-wrap: break-word;   /* Break long words */
+  min-width: none;
+
 }
 
 /* Light theme code blocks - AI messages only */
@@ -92,6 +107,8 @@
   font-family: 'Fira Code', 'Monaco', 'Consolas', 'Ubuntu Mono', 'SFMono-Regular', monospace;
   font-size: 0.9em;
   color: #58a6ff;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 /* Light theme inline code - AI messages only */
@@ -168,6 +185,10 @@
   background: rgba(255, 255, 255, 0.05);
   border-radius: 0 4px 4px 0;
   font-style: italic;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+  min-width: none;
+  max-width: 100%;
 }
 
 .message.ai blockquote p {
@@ -180,12 +201,14 @@
   margin: 1em 0;
   width: 100%;
   font-size: 0.9em;
+  max-width: 100%;
 }
 
 .message.ai th, .message.ai td {
   border: 1px solid rgba(255, 255, 255, 0.2);
   padding: 0.5em 0.75em;
   text-align: left;
+  
 }
 
 .message.ai th {

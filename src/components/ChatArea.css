@@ -119,6 +119,10 @@
     max-width: 85%;
 }
 
+.msg-disable{
+    display: none;
+}
+
 
 /* 4. A wrapper to anchor the input section to the bottom */
 .input-wrapper {
@@ -562,6 +566,55 @@
 .file-image-preview {
     object-fit: cover;
     border-radius: 4px;
+}
+
+/* Retry functionality styles */
+.retry-container {
+    margin-top: 8px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.retry-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.retry-button:hover {
+    background: var(--chatarea-bg);
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
+}
+
+.retry-button:active {
+    transform: scale(0.98);
+}
+
+.retry-button svg {
+    flex-shrink: 0;
+}
+
+/* Responsive styles for retry button */
+@media (max-width: 480px) {
+    .retry-button {
+        font-size: 11px;
+        padding: 4px 8px;
+        gap: 4px;
+    }
+    
+    .retry-button svg {
+        width: 14px;
+        height: 14px;
+    }
 }
 
 .file-details {

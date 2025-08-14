@@ -20,6 +20,7 @@ export default function Dashboard() {
     const options: string[] = ['Job Portal', 'Normal'];
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
     const dropdownRef = useClickOutside(() => setOpen(false));
+    const scrollRef=useRef<boolean>(false);
 
     const Navigate = useNavigate();
 
@@ -42,10 +43,7 @@ export default function Dashboard() {
     const sidebarContext = useContext(SideContext);
     if (!sidebarContext) throw new Error("SidebarContext is undefined");
     const { setSelectedChatId } = sidebarContext;
-    
-    useEffect(()=>{
-        setSelectedChatId(null); // Reset selected chat ID on mount
-    },[])
+
 
     const handleSend = async () => {
         if (input.trim() === '' && attachedFiles.length === 0) return;
@@ -63,17 +61,15 @@ export default function Dashboard() {
                     files: attachedFiles.length > 0 ? attachedFiles : undefined
                 })
             });
-            console.log("pure res",res);
+            // console.log("pure res",res);
             if (!res.ok) {
                 const errorText = await res.text();
                 throw new Error(errorText || "Failed to create chat");
             }
             
-            const chatResponse = await res.json();
-            console.log("reponse of user",chatResponse);
-            
-            const chatId = chatResponse._id;
-            const messageId = chatResponse.messageId; // Get messageId from the first message in history
+            let chatId = await res.json();
+            chatId=chatId._id;
+            const messageId = chatId.messageId;
 
             // Set the newly created chat as selected
             
@@ -123,6 +119,7 @@ export default function Dashboard() {
                     </div>
                     <div className="input-wrapper">
                         <InputArea
+                            scrollRef={scrollRef}
                             input={input}
                             setInput={setInput}
                             textareaRef={textareaRef}

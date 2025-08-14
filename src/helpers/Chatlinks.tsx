@@ -14,7 +14,6 @@ function Chatlinks({ id, title, selected, onSelect, onDelete }: ChatlinksProps) 
 
     const handleTitleClick = (e: React.MouseEvent) => {
         e.stopPropagation();
-        console.log("hiiiii", id);
         Navigate(`/chat/${id}`);
         onSelect();
     }
