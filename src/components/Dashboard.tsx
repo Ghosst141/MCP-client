@@ -8,6 +8,7 @@ import InputArea from '../helpers/InputArea';
 import { useNavigate } from 'react-router-dom';
 import { chatContext } from '../contexts/ChatContext';
 import { SideContext } from '../contexts/SidebarContext';
+import { createAChatwithFirstMessage } from '../services/ApiCallsforDB';
 
 
 export default function Dashboard() {
@@ -50,30 +51,11 @@ export default function Dashboard() {
         const userId = "user123"; // Replace this with actual user ID logic
         setLoading(true);
         try {
-            const res = await fetch("http://localhost:3000/api/chats", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    userId,
-                    text: input.trim(),
-                    files: attachedFiles.length > 0 ? attachedFiles : undefined
-                })
-            });
-            // console.log("pure res",res);
-            if (!res.ok) {
-                const errorText = await res.text();
-                throw new Error(errorText || "Failed to create chat");
-            }
-            
-            let chatId = await res.json();
-            chatId=chatId._id;
-            const messageId = chatId.messageId;
+            // Create a new chat with the first message
+            const data = await createAChatwithFirstMessage(userId, input.trim(), attachedFiles);
+            const chatId = data._id;
+            const messageId = data.messageId;
 
-            // Set the newly created chat as selected
-            
-            // Don't refresh chats immediately - let it refresh when the message is processed
             setFirstChat({
                 text: input.trim(),
                 files: attachedFiles.length > 0 ? attachedFiles : undefined,

@@ -1,4 +1,5 @@
 import React, { createContext, useEffect, useState } from 'react'
+import { deleteChatfromDB, fetchChats } from '../services/ApiCallsforDB';
 
 type FirstChatData = {
     text: string;
@@ -44,17 +45,8 @@ function ChatContext({ children }: { children: React.ReactNode }) {
     const refreshChats = async () => {
         try {
             setLoading(true);
-            const res = await fetch(`http://localhost:3000/api/userchats?userId=user123`, {
-                credentials: "include",
-            });
-            const data = await res.json();
-
-            // Sort chats by createdAt timestamp in descending order (newest first)
-            const sortedChats = data.sort((a: any, b: any) => {
-                const dateA = new Date(a.createdAt).getTime();
-                const dateB = new Date(b.createdAt).getTime();
-                return dateB - dateA; // Most recent first
-            });
+            //fetch chats
+            const sortedChats = await fetchChats("user123");
 
             setChats(sortedChats);
             setLoading(false);
@@ -67,27 +59,8 @@ function ChatContext({ children }: { children: React.ReactNode }) {
 
     const deleteChat = async (chatId: string) => {
         try {
-            const url = `http://localhost:3000/api/chats/${chatId}?userId=user123`;
-
-            const res = await fetch(url, {
-                method: 'DELETE',
-                credentials: "include",
-            });
-
-            if (!res.ok) {
-                // Check if it's a 404 error (route not found) vs other errors
-                if (res.status === 404) {
-                    const errorText = await res.text();
-                    if (errorText.includes("Cannot DELETE")) {
-                        throw new Error("Server doesn't support DELETE operation. Please restart your server.");
-                    } else {
-                        throw new Error("Chat not found or already deleted.");
-                    }
-                } else {
-                    const errorText = await res.text();
-                    throw new Error(`Failed to delete chat: ${res.status} - ${errorText}`);
-                }
-            }
+            const userId = "user123";
+            await deleteChatfromDB(chatId, userId);
 
             await refreshChats();
         } catch (err) {

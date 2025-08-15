@@ -5,6 +5,9 @@ import { SideContext } from '../contexts/SidebarContext';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../hooks/useTheme';
 import type { ModelName } from '../types';
+import { models } from "../services/Models" // Import models from the service
+import HeaderDropdowns from '../helpers/HeaderDropdowns';
+import { useAIModel } from '../hooks/useAIModel';
 
 const Header = () => {
     const [open, setOpen] = useState(false);
@@ -13,8 +16,12 @@ const Header = () => {
     const [tempApiKey, setTempApiKey] = useState("");
     const [selectedModel, setSelectedModel] = useState<ModelName>("ChatGPT");
     const [keyError, setKeyError] = useState<boolean>(false);
+    const [openSubmenuIndex, setOpenSubmenuIndex] = useState<number | null>(null);
 
-    const dropdownRef = useClickOutside(() => setOpen(false));
+    const dropdownRef = useClickOutside(() => {
+        setOpen(false);
+        setOpenSubmenuIndex(null);
+    });
     const context = useContext(SideContext);
     if (!context) throw new Error("SidebarContext is undefined");
     const { isSideopen, toggleSidebar, setSelectedChatId } = context;
@@ -92,6 +99,34 @@ const Header = () => {
         // setOpen(false);
     };
 
+    const { selectedLLM, setSelectedLLM } = useAIModel();
+
+    // Function to find which model contains a specific LLM
+    const findModelForLLM = (llmName: string): ModelName | null => {
+        for (const model of models) {
+            if (model.llms.some((llm: any) => llm.name === llmName)) {
+                return model.name as ModelName;
+            }
+        }
+        return null;
+    };
+
+    // UseEffect to sync model selection based on selected LLM when dropdown opens/closes
+    useEffect(() => {
+        if (selectedLLM) {
+            const correspondingModel = findModelForLLM(selectedLLM);
+            if (correspondingModel && correspondingModel !== selectedModel) {
+                setSelectedModel(correspondingModel);
+                localStorage.setItem('selected_model', correspondingModel);
+            }
+        }
+    }, [open]); // Dependency on dropdown open/close state and selectedLLM
+
+    useEffect(()=>{
+        console.log(localStorage);
+        
+    },[selectedLLM,selectedModel,setApiKey])
+
     return (
         <div className="header">
             {/* Desktop sidebar controls */}
@@ -113,13 +148,13 @@ const Header = () => {
 
             <div className='header-dropdown' ref={dropdownRef}>
                 <button className="header-label" onClick={() => { setOpen(!open); setKeyError(false) }}>
-                    <span className="label-text">{selectedModel}</span>
+                    <span className="label-text">{selectedLLM}</span>
                     <span className="label-arrow"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg" className="icon-sm text-token-text-tertiary"><path d="M12.1338 5.94433C12.3919 5.77382 12.7434 5.80202 12.9707 6.02929C13.1979 6.25656 13.2261 6.60807 13.0556 6.8662L12.9707 6.9707L8.47067 11.4707C8.21097 11.7304 7.78896 11.7304 7.52926 11.4707L3.02926 6.9707L2.9443 6.8662C2.77379 6.60807 2.80199 6.25656 3.02926 6.02929C3.25653 5.80202 3.60804 5.77382 3.86617 5.94433L3.97067 6.02929L7.99996 10.0586L12.0293 6.02929L12.1338 5.94433Z"></path></svg></span>
                 </button>
 
                 {open && (
                     <div className="dropdown">
-                        <div className="dropdown-item" onClick={handleSetAPIKey}>
+                        <div className="dropdown-item set-key" onClick={handleSetAPIKey}>
                             <div className="icon">🔑</div>
                             <div className="details">
                                 <div className="title">Set API Key</div>
@@ -134,42 +169,19 @@ const Header = () => {
                         </div>
 
                         <div className="dropdown-separator"></div>
-
-                        <div className={`dropdown-item ${selectedModel === 'ChatGPT' ? 'selected' : ''}`} onClick={() => handleModelSelect('ChatGPT')}>
-                            <div className="icon">⊗</div>
-                            <div className="details">
-                                <div className="title">ChatGPT</div>
-                                <div className="subtitle">OpenAI's conversational AI</div>
-                            </div>
-                            {selectedModel === 'ChatGPT' && <div className="checkmark">✔</div>}
-                        </div>
-
-                        <div className={`dropdown-item ${selectedModel === 'Gemini' ? 'selected' : ''}`} onClick={() => handleModelSelect('Gemini')}>
-                            <div className="icon">💎</div>
-                            <div className="details">
-                                <div className="title">Gemini</div>
-                                <div className="subtitle">Google's AI model</div>
-                            </div>
-                            {selectedModel === 'Gemini' && <div className="checkmark">✔</div>}
-                        </div>
-
-                        <div className={`dropdown-item ${selectedModel === 'Claude' ? 'selected' : ''}`} onClick={() => handleModelSelect('Claude')}>
-                            <div className="icon">🤖</div>
-                            <div className="details">
-                                <div className="title">Claude</div>
-                                <div className="subtitle">Anthropic's AI assistant</div>
-                            </div>
-                            {selectedModel === 'Claude' && <div className="checkmark">✔</div>}
-                        </div>
-
-                        <div className={`dropdown-item ${selectedModel === 'GPT-4' ? 'selected' : ''}`} onClick={() => handleModelSelect('GPT-4')}>
-                            <div className="icon sparkle">✨</div>
-                            <div className="details">
-                                <div className="title">GPT-4</div>
-                                <div className="subtitle">OpenAI's most advanced model</div>
-                            </div>
-                            {selectedModel === 'GPT-4' && <div className="checkmark">✔</div>}
-                        </div>
+                        {models.map((model,index)=>(
+                            <HeaderDropdowns
+                             key={index}
+                             model={model}
+                             selectedModel={selectedModel}
+                             selectedLLM={selectedLLM}
+                             setSelectedLLM={setSelectedLLM}
+                             setSubmenu={setOpenSubmenuIndex}
+                             handleModelSelect={handleModelSelect}
+                             isSubmenuOpen={openSubmenuIndex === index}
+                             onSubmenuToggle={() => setOpenSubmenuIndex(openSubmenuIndex === index ? null : index)}
+                            />
+                        ))}
                     </div>
                 )}
             </div>

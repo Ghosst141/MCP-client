@@ -13,6 +13,7 @@ import { chatContext } from '../contexts/ChatContext';
 import useChatModel from '../hooks/useChatModel';
 import { saveAiMessage, handleRetryMessage, isOrphanMessage } from '../helpers/chatArea';
 import { userPromptGeneration } from '../helpers/prompGenerate';
+import { fetchMessagesAndSort } from '../services/ApiCallsforDB';
 // import { SideContext } from '../contexts/SidebarContext';
 
 
@@ -172,23 +173,16 @@ export default function ChatArea() {
     const fetchChat = async () => {
       try {
         setMessagesLoading(true);
-        const res = await fetch(`http://localhost:3000/api/chats/${chatId}?userId=user123`);
-        const data = await res.json();
-        if (!Array.isArray(data.history)) {
+
+        //fetch call
+        const sortedHistory = await fetchMessagesAndSort(chatId, "user123", text, firstChatFiles);
+
+        if (!sortedHistory) {
           setMessagesLoading(false);
           Navigate('/');
           return;
         }
-        if (data.history.length === 0 && !text && (!firstChatFiles || firstChatFiles.length === 0)) {
-          Navigate('/');
-          setMessagesLoading(false);
-          return;
-        }
-        const sortedHistory = data.history.sort((a: any, b: any) => {
-          const aId = a.messageId || a._id || 0;
-          const bId = b.messageId || b._id || 0;
-          return aId.toString().localeCompare(bId.toString());
-        });
+
         const mappedMessages: Message[] = sortedHistory.map((item: any) => {
           const files: FileAttachment[] | undefined = item.files && item.files.length > 0
             ? item.files
@@ -201,6 +195,7 @@ export default function ChatArea() {
             timestamp: item.timestamp ? new Date(item.timestamp).getTime() : Date.now(),
           };
         });
+
         setMessages(mappedMessages);
         setMessagesLoading(false);
         if ((text || (firstChatFiles && firstChatFiles.length > 0)) && !initialMessageProcessed && geminiModel) {
@@ -251,7 +246,8 @@ export default function ChatArea() {
             setLoading(false);
           }
         }
-      } catch {
+      } catch (e) {
+        console.log("Error fetching chat:", e);
         setMessagesLoading(false);
         Navigate('/');
       }
@@ -276,24 +272,16 @@ export default function ChatArea() {
   }, [chatId, text, firstChatFiles, messages.length, Navigate]);
 
   useEffect(() => {
-    const checkChatExists = async () => {
-      if (!chatId || text) return;
-      try {
-        const res = await fetch(`http://localhost:3000/api/chats/${chatId}?userId=user123`);
-        if (!res.ok && res.status === 404) {
-          Navigate("/");
-        }
-      } catch (e) {
-        console.log("Error fetching chat:", e);
-      }
-    };
-    checkChatExists();
-  }, [chatId, text, Navigate]);
+    if (!chatId) {
+      Navigate("/");
+      return;
+    }
+  }, [chatId, Navigate]);
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
     const isAtBottom =
-      target.scrollHeight - target.scrollTop <= target.clientHeight + 5; // 5px tolerance
+      target.scrollHeight - target.scrollTop <= target.clientHeight + 15; // 5px tolerance
 
     if (!isAtBottom) {
       userScrollRef.current = true;

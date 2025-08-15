@@ -7,7 +7,11 @@
     cursor: pointer;
     position: relative;
     box-shadow: var(--chatlinks-shadow);
-    
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+
 }
 
 .chat-links:hover {
@@ -25,7 +29,8 @@
     text-overflow: ellipsis;
     margin-right: 8px;
     height: 1.5rem;
-    line-height: 1.5rem; /* Match the height to vertically center text */
+    line-height: 1.5rem;
+    /* Match the height to vertically center text */
     vertical-align: middle;
 }
 
@@ -105,6 +110,6 @@
     flex-shrink: 0;
 }
 
-.selected{
+.selected {
     background-color: var(--chatlink-selected);
 }

@@ -3,13 +3,20 @@ import type { ModelName } from '../types';
 
 export const useAIModel = () => {
     const [selectedModel, setSelectedModel] = useState<ModelName>('ChatGPT');
+    const [selectedLLM, setSelectedLLM] = useState<string | null>("gpt-4o");
     const [apiKey, setApiKey] = useState<string>('');
 
     useEffect(() => {
         // Load selected model
         const savedModel = localStorage.getItem('selected_model') as ModelName;
-        if (savedModel && ['ChatGPT', 'Gemini', 'Claude', 'GPT-4'].includes(savedModel)) {
+        if (savedModel) {
             setSelectedModel(savedModel);
+        }
+
+        // Load selected LLM
+        const savedLLM = localStorage.getItem('selected_llm');
+        if (savedLLM) {
+            setSelectedLLM(savedLLM);
         }
     }, []);
 
@@ -41,15 +48,22 @@ export const useAIModel = () => {
         return selectedModel;
     };
 
+    const getLLMDisplayName = () => {
+        return selectedLLM;
+    };
+
     const hasValidApiKey = () => {
         return apiKey.trim().length > 0;
     };
 
     return {
         selectedModel,
+        selectedLLM,
         apiKey,
+        setSelectedLLM,
         getApiEndpoint,
         getModelDisplayName,
-        hasValidApiKey
+        hasValidApiKey,
+        getLLMDisplayName
     };
 };

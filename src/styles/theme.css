@@ -18,6 +18,10 @@
     --dropdown-bg: #ffffff;
     --dropdown-border: #e5e7eb;
     --dropdown-shadow: rgba(0, 0, 0, 0.1);
+    --subdropdown-bg: #ebfaff;
+    --subdropdown-border: #e5e7eb;
+    --subdropdown-shadow: rgba(0, 0, 0, 0.1);
+    --subdropdown-item-hover: #f1f3f5;
     --input-bg: #ffffff;
     --input-border: #d1d5db;
     --input-border-focus: #3b82f6;
@@ -73,6 +77,10 @@
     --dropdown-bg: #2e2e2e;
     --dropdown-border: #454545;
     --dropdown-shadow: rgba(0, 0, 0, 0.4);
+    --subdropdown-bg: #363636;
+    --subdropdown-border: #454545;
+    --subdropdown-shadow: rgba(9, 9, 9, 0.4);
+    --subdropdown-item-hover: #4a4a4a;
     --input-bg: #1e1e1e;
     --input-border: #4a4a4a;
     --input-border-focus: #3b82f6;

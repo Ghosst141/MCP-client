@@ -30,6 +30,6 @@ interface AIModel {
   apiKeyPrefix: string;
 }
 
-type ModelName = 'ChatGPT' | 'Gemini' | 'Claude' | 'GPT-4';
+type ModelName = 'ChatGPT' | 'Gemini' | 'Claude' | 'GPT-4' | 'DALL-E';
 
 export type { Message, FileAttachment, ChatlinksProps, AIModel, ModelName };
