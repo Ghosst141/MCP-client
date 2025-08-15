@@ -50,7 +50,7 @@ export default function ChatArea() {
 
   useEffect(() => {
     userScrollRef.current = false;
-    
+
     if (messages.length > 0 && !messagesLoading && !hasScrolledOnLoad.current) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       hasScrolledOnLoad.current = true;
@@ -136,8 +136,6 @@ export default function ChatArea() {
     }
     const ongoing = onGoingChat?.find(chat => chat.chatId === chatId);
     if (ongoing) {
-      // console.log("or here full show");
-      // console.log(ongoing);
       setLoading(true);
       setStreamingMessageId(ongoing.messageId);
       if (ongoing.retry) {
@@ -166,6 +164,10 @@ export default function ChatArea() {
           return newMessages;
         });
       }
+    }else{
+      setLoading(false);
+      setStreamingMessageId(null);
+      setRetryingMessageIndex(null);
     }
   }, [chatId, onGoingChat, Navigate, messages, setLoading, setMessages, setStreamingMessageId]);
 
@@ -219,7 +221,7 @@ export default function ChatArea() {
             setMessages(prev => [...prev, aiResponse]);
 
             const fullResponse = await userPromptGeneration(prompt, messageId, aiMessageId, geminiModel, chatId as any, setMessages, activeChatIdRef);
-            
+
             popOngoingChat(chatId || "", aiMessageId);
 
             if (chatId && fullResponse && aiMessageId !== null) {

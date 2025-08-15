@@ -1,4 +1,5 @@
 import type { Message } from "../types";
+// import {askGeminiWithMCP} from '../../../weather-mcp-server-client/client/client';
 
 const userPromptGeneration = async (
     prompt: string,
@@ -30,6 +31,40 @@ const userPromptGeneration = async (
     return fullResponse;
 }
 
+// const userPromptGeneration = async (
+//     prompt: string,
+//     messageId: any,
+//     aiMessageId: number | null,
+//     geminiModel: any,
+//     sendingToChatId: string,
+//     setMessages: (value: React.SetStateAction<Message[]>) => void,
+//     activeChatIdRef: React.RefObject<string | undefined>,
+
+// ) => {
+//     let fullResponse = '';
+//     const result = await fetch('http://localhost:3001/api/ask-gemini', {
+//         method: 'POST',
+//         headers: {
+//             'Content-Type': 'application/json'
+//         },
+//         body: JSON.stringify({ prompt })
+//     });
+//     const data = await result.json();
+
+//     fullResponse = data?.result;
+//     if (activeChatIdRef.current === sendingToChatId) {
+//         setMessages(prev =>
+//             prev.map(msg =>
+//                 (msg.timestamp === aiMessageId && msg.messageId === messageId)
+//                     ? { ...msg, text: fullResponse }
+//                     : msg
+//             )
+//         );
+//     }
+
+//     return fullResponse;
+// }
+
 const errorResolveForPrompt = (
     messageId: any,
     errorText: string,
@@ -41,9 +76,13 @@ const errorResolveForPrompt = (
         return msg.messageId === messageId && msg.sender === 'ai';
     });
     if (isPresent === -1) {
+        console.log("hi");
+
         setMessages(prev => [...prev, errorResponse]);
     }
     else {
+        console.log("bye");
+
         setMessages(prev => {
             const newMessages = [...prev];
             newMessages[isPresent]["text"] = errorText;
@@ -63,23 +102,23 @@ const errorResolveForPromptWithRetry = (
         const newMessages = [...prev];
         const nextMsg = newMessages[msgIndex + 1];
         if (nextMsg && nextMsg.sender === 'ai' && nextMsg.messageId === userMessage.messageId) {
-          // Update the existing AI message's text
-          newMessages[msgIndex + 1] = {
-            ...nextMsg,
-            text: errorText
-          };
+            // Update the existing AI message's text
+            newMessages[msgIndex + 1] = {
+                ...nextMsg,
+                text: errorText
+            };
         } else {
-          // Insert a new error AI message
-          const aiResponse: Message = {
-            messageId: userMessage.messageId,
-            sender: 'ai',
-            text: errorText,
-            timestamp: aiMessageId
-          };
-          newMessages.splice(msgIndex + 1, 0, aiResponse);
+            // Insert a new error AI message
+            const aiResponse: Message = {
+                messageId: userMessage.messageId,
+                sender: 'ai',
+                text: errorText,
+                timestamp: aiMessageId
+            };
+            newMessages.splice(msgIndex + 1, 0, aiResponse);
         }
         return newMessages;
-      });
+    });
 }
 
-export { userPromptGeneration,errorResolveForPrompt, errorResolveForPromptWithRetry }
+export { userPromptGeneration, errorResolveForPrompt, errorResolveForPromptWithRetry }

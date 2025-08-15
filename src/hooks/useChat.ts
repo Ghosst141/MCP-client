@@ -54,7 +54,7 @@ export function useChat(chatId?: string) {
         }
 
         // Set loading state first
-        let aiMessageId: number | null = null; // Declare outside try-catch to access in error handling
+        const aiMessageId = Date.now() + Math.random(); // Declare outside try-catch to access in error handling
         let messageId: any = null;
         try {
             // 1. Save user message to database FIRST
@@ -102,11 +102,10 @@ export function useChat(chatId?: string) {
                 prompt = prompt ? `${prompt}\n\nAttached files: ${fileInfo}` : `Analyze these files: ${fileInfo}`;
             }
 
-            aiMessageId = Date.now() + Math.random(); // Prevent collisions
             if (pushOngoingChat) {
-                pushOngoingChat(chatId || "", aiMessageId, messageId);
+                pushOngoingChat(sendingToChatId, aiMessageId, messageId);
             }
-            
+
             const aiResponse: Message = {
                 messageId: messageId,
                 sender: 'ai',
@@ -150,9 +149,9 @@ export function useChat(chatId?: string) {
         } catch (error) {
             console.error('Error contacting backend:', error);
             const errorText = `Error: Failed to get response from Gemini. ${error instanceof Error ? error.message : 'Please try again.'}`;
-
+            setLoading(false);
             setStreamingMessageId(null);
-            const errorMessageId = Date.now() + Math.random();
+            const errorMessageId = aiMessageId;
             const errorResponse: Message = {
                 messageId: messageId,
                 sender: 'ai',
@@ -163,6 +162,7 @@ export function useChat(chatId?: string) {
                 errorResolveForPrompt(messageId, errorText, errorResponse, messages, setMessages);
             }
 
+            
             // Save error response to database
             try {
                 await saveModelMessage(
@@ -174,14 +174,16 @@ export function useChat(chatId?: string) {
             } catch (dbError) {
                 console.error('Failed to save error response to database:', dbError);
             }
-
+            
             if (popOngoingChat && aiMessageId !== null) {
                 popOngoingChat(sendingToChatId, aiMessageId);
             }
         } finally {
-            console.log("response completed");
-
+            console.log("response completed");    
             // Always reset loading state
+            if(popOngoingChat){
+                popOngoingChat(sendingToChatId, aiMessageId);
+            }
             if (chatId === sendingToChatId) {
                 setLoading(false);
                 setStreamingMessageId(null);
